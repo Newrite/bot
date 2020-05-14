@@ -1,90 +1,206 @@
 package main
 
 import (
+	"bot/TwitchAPI"
 	"bufio"
 	"encoding/json"
 	"fmt"
+	//"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"math/rand"
 	"net"
 	"net/textproto"
-	"time"
+	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
-type TwitchBot struct {
-	BotName    string   `json:"bot_name"`
-	OAuth      string   `json:"o_auth"`
-	Server     string   `json:"server"`
-	Port       string   `json:"port"`
-	OwnerBot   string   `json:"owner_bot"`
-	Channels   []string `json:"channels"`
-	Connection net.Conn
-	ReadChannels *textproto.Reader
+const TimeFormat = "2006.01.02 15:04"
+
+func timeStamp() string {
+	return time.Now().Format(TimeFormat)
 }
 
-func (bot *TwitchBot) connect() {
+var cmd = map[string]string{
+	"!ping": "pong!",
+	"!бот":  "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек.",
+	"!bot":  "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек.",
+	"!help": "Доступные комманды: !ping, !бот, !roll, !help, !API uptime, !API status, !API game, !API realname",
+	"!roll": "_",
+}
+
+var react = map[string]string{
+	"PogChamp": "PogChamp",
+	"Kappa 7":  "Kappa 7",
+	"Привет": "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
+	"привет": "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
+	"Hello": "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
+	"hello": "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
+}
+
+type TwitchBot struct {
+	BotName        string   `json:"bot_name"`
+	OAuth          string   `json:"o_auth"`
+	Server         string   `json:"server"`
+	Port           string   `json:"port"`
+	OwnerBot       string   `json:"owner_bot"`
+	Channels       []string `json:"channels"`
+	Connection     net.Conn
+	ReadChannels   *textproto.Reader
+	fileChannelLog map[string]*os.File
+}
+
+func (self *TwitchBot) Start() {
 	var err error
-	bot.Connection, err = net.Dial("tcp", bot.Server+":"+bot.Port)
-	if err != nil {
-		fmt.Print("Ошибка попытки соединения: ", err)
-		time.Sleep(300000000)
-		bot.connect()
+	for {
+		self.connect()
+		err = self.joinChannels()
+		if err != nil {
+			err = nil
+			continue
+		}
+		self.ReadChannels = textproto.NewReader(bufio.NewReader(self.Connection))
+		err = self.listenChannels()
+		if err != nil {
+			err = nil
+			time.Sleep(10 * time.Second)
+			continue
+		} else {
+			break
+		}
 	}
-	_, err = bot.Connection.Write([]byte("PASS " + bot.OAuth + "\r\n"))
+	defer self.Connection.Close()
+}
+
+func (self *TwitchBot) connect() {
+	var err error
+	self.Connection, err = net.Dial("tcp", self.Server+":"+self.Port)
 	if err != nil {
-		fmt.Print("Ошибка во время отправки oauth-key: ", err)
-		time.Sleep(300000000)
-		bot.connect()
+		fmt.Println("Ошибка попытки соединения: ", err)
+		time.Sleep(10 * time.Second)
+		self.connect()
 	}
-	_, err = bot.Connection.Write([]byte("NICK " + bot.BotName + "\r\n"))
+}
+
+func (self *TwitchBot) joinChannels() error {
+	var err error
+	_, err = self.Connection.Write([]byte("PASS " + self.OAuth + "\r\n"))
+	_, err = self.Connection.Write([]byte("NICK " + self.BotName + "\r\n"))
 	if err != nil {
 		fmt.Print("Ошибка во время отправки логина: ", err)
-		time.Sleep(300000000)
-		bot.connect()
+		time.Sleep(10 * time.Second)
+		return err
 	}
-}
-
-func (bot *TwitchBot) joinChannels() {
-	for _, channel := range bot.Channels {
-		_, err := bot.Connection.Write([]byte("JOIN #" + channel + "\r\n"))
+	for _, channel := range self.Channels {
+		_, err := self.Connection.Write([]byte("JOIN #" + channel + "\r\n"))
 		if err != nil {
 			fmt.Print("Ошибка во время входа в чат-комнату: ", err)
+			return err
 		}
 	}
+	return nil
 }
 
-func (bot *TwitchBot) listenChannels() {
+func (self *TwitchBot) listenChannels() error {
+	self.openChannelLog()
+	for _, channelFile := range self.fileChannelLog {
+		defer channelFile.Close()
+	}
 	for {
-		line, err := bot.ReadChannels.ReadLine()
+		line, err := self.ReadChannels.ReadLine()
 		if err != nil {
-			fmt.Println("Error: ", err)
+			fmt.Println("Ошибка во время чтения строки: ", err)
+			return err
 		}
-		fmt.Printf(line + "\n")
 		if line == "PING :tmi.twitch.tv" {
-			bot.Connection.Write([]byte("PONG\r\n"))
+			fmt.Println("PING :tmi.twitch.tv")
+			self.Connection.Write([]byte("PONG\r\n"))
+			continue
 		}
-		var userName, channelName, message string = bot.handleLine(line)
-		//fmt.Println("DEBUG 1: ", "User: ", userName, " Channel: ", channelName, " MSG: ", message)
-		if strings.Contains(message, "!бот") || strings.Contains(message, "!бот") {
-			bot.say("@"+userName+" AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек.", channelName)
+		var userName, channelName, message string = self.handleLine(line)
+		if message != "" && !strings.Contains(userName, self.BotName+".tmi.twitch.tv 353") && !strings.Contains(userName, self.BotName+".tmi.twitch.tv 366") {
+			self.fileChannelLog[channelName].WriteString("[" + timeStamp() + "] Канал:" + channelName + " Ник:" + userName + "\tСообщение:" + message + "\n")
+			fmt.Print("[" + timeStamp() + "] Канал:" + channelName + "\tНик:" + userName + "\tСообщение:" + message + "\n")
 		}
-		time.Sleep(1000000)
+		for key := range react {
+			if strings.Contains(message, key) {
+				self.say(react[key], channelName)
+				break
+			}
+		}
+		strings.ToLower(message)
+		for key, value := range cmd {
+			if strings.HasPrefix(message, key) && value != "_" {
+				self.say("@"+userName+" "+cmd[key], channelName)
+				break
+			}
+			if strings.HasPrefix(message, key) && value == "_" {
+				self.say(self.handleInteractiveCMD(key, channelName, userName), channelName)
+				break
+			}
+		}
+		if strings.HasPrefix(message, "!API") {
+			go self.say(self.handleAPIcmd(message, channelName, userName), channelName)
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
-func (bot *TwitchBot) say(msg, channel string) {
+func (self *TwitchBot) handleAPIcmd(message, channel, username string) string {
+	switch {
+	case strings.HasPrefix(message, "!API uptime"):
+		return "@" + username + " стрим длится уже: " + TwitchAPI.GOTwitch(channel, "uptime")
+	case strings.HasPrefix(message, "!API game"):
+		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "game")
+	case strings.HasPrefix(message, "!API status"):
+		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "status")
+	case strings.HasPrefix(message, "!API realname"):
+		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "realname")
+	default:
+		return ""
+	}
+}
+
+func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username string) string {
+	switch cmd {
+	case "!roll":
+		return "@" + username + " " + strconv.Itoa(rand.Intn(21))
+	default:
+		return "none"
+	}
+}
+
+func (self *TwitchBot) openChannelLog() {
+	self.fileChannelLog = make(map[string]*os.File)
+	for _, channel := range self.Channels {
+		var err error
+		err = os.MkdirAll("logs/"+channel+" Channel", 0777)
+		if err != nil && !strings.Contains(err.Error(), "Cannot create a file when that file already exists.") {
+			fmt.Println("Не удалось создать директорию для канала:", err)
+			err = nil
+		}
+		self.fileChannelLog[channel], err = os.OpenFile("logs/"+channel+" Channel/"+channel+" Log.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		if err != nil {
+			fmt.Println("Не удалось создать \\ открыть файл:", err)
+		}
+	}
+}
+
+func (self *TwitchBot) say(msg, channel string) {
 	if msg == "" {
 		fmt.Println("Сообщение пустое")
 		return
 	}
-	_, err := bot.Connection.Write([]byte("PRIVMSG #"+channel+" :"+msg+"\r\n"))
+	_, err := self.Connection.Write([]byte("PRIVMSG #" + channel + " :" + msg + "\r\n"))
 	if err != nil {
 		fmt.Println("Ошибка отрпавки сообщения: ", err)
 	}
+	self.fileChannelLog[channel].WriteString("[" + timeStamp() + "] Канал:" + channel + " Ник:" + self.BotName + "\tСообщение:" + msg + "\n")
+	fmt.Print("[" + timeStamp() + "] Канал:" + channel + "\tНик:" + self.BotName + "\tСообщение:" + msg + "\n")
 }
 
-func (bot *TwitchBot) handleLine(line  string) (user, channel, message string) {
+func (self *TwitchBot) handleLine(line string) (user, channel, message string) {
 	var temp int
 	for _, sym := range line {
 		if sym == '!' {
@@ -133,13 +249,5 @@ func main() {
 	if err != nil {
 		fmt.Print("Ошибка конвертирования структуры из файла в структуру бота: ", err)
 	}
-	fmt.Println(bot)
-	bot.connect()
-	bot.joinChannels()
-	bot.ReadChannels = textproto.NewReader(bufio.NewReader(bot.Connection))
-	go bot.listenChannels()
-	for {
-		time.Sleep(100000000)
-	}
-	defer bot.Connection.Close()
+	bot.Start()
 }

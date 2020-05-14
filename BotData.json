@@ -1,0 +1,17 @@
+{
+	"bot_name": "adaiseva",
+    "o_auth": "oauth:2m0hfirzasam3tkwo0ty9wwf1wjmz3",
+	"server": "irc.chat.twitch.tv",
+	"port": "6667",
+	"owner_bot": "newr1te",
+	"channels": [
+    "xandr_sh",
+    "newr1te",
+    "reflyq",
+    "markus242",
+    "cryo_0",
+    "desmond_hh",
+	"felicia_nought",
+	"blindwalkerboy"
+    ]
+}
