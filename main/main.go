@@ -130,7 +130,7 @@ func (self *TwitchBot) listenChannels() error {
 			self.FileChannelLog[channelName].WriteString("[" + timeStamp() + "] Канал:" + channelName + " Ник:" + userName + "\tСообщение:" + message + "\n")
 			fmt.Print("[" + timeStamp() + "] Канал:" + channelName + "\tНик:" + userName + "\tСообщение:" + message + "\n")
 		}
-		if message == "!bot switch" && (userName == channelName || channelName == self.OwnerBot) {
+		if message == "!bot switch" && (userName == channelName || userName== self.OwnerBot) {
 			switch self.Settings[channelName].status {
 			case true:
 				self.Settings[channelName].status = false
