@@ -26,7 +26,7 @@ var cmd = map[string]string{
 	"!ping": "pong!",
 	"!бот":  "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек.",
 	"!bot":  "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек.",
-	"!help": "Доступные комманды: !ping, !бот, !roll, !help, !API uptime, !API status, !API game, !API realname",
+	"!help": "Доступные комманды: !ping, !бот, !roll, !help, !API uptime, !API status, !API game, !API realname. Владелец бота либо канала может переключить активность бота коммандой !bot switch",
 	"!roll": "_",
 }
 
@@ -125,7 +125,6 @@ func (self *TwitchBot) listenChannels() error {
 			self.Connection.Write([]byte("PONG\r\n"))
 			continue
 		}
-		fmt.Println(line)
 		var userName, channelName, message string = self.handleLine(line)
 		if message != "" && !strings.Contains(userName, self.BotName+".tmi.twitch.tv 353") && !strings.Contains(userName, self.BotName+".tmi.twitch.tv 366") {
 			self.FileChannelLog[channelName].WriteString("[" + timeStamp() + "] Канал:" + channelName + " Ник:" + userName + "\tСообщение:" + message + "\n")
@@ -135,14 +134,18 @@ func (self *TwitchBot) listenChannels() error {
 			switch self.Settings[channelName].status {
 			case true:
 				self.Settings[channelName].status = false
+				self.say("Засыпаю...", channelName)
 				continue
 			case false:
 				self.Settings[channelName].status = true
+				self.say("Проснулись, улыбнулись!", channelName)
 				continue
 			}
 		}
-		if !self.Settings[channelName].status {
-			continue
+		if _, ok := self.Settings[channelName]; ok {
+			if !self.Settings[channelName].status {
+				continue
+			}
 		}
 		for key := range react {
 			if strings.Contains(message, key) {
