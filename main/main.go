@@ -48,7 +48,13 @@ type TwitchBot struct {
 	Channels       []string `json:"channels"`
 	Connection     net.Conn
 	ReadChannels   *textproto.Reader
-	fileChannelLog map[string]*os.File
+	FileChannelLog map[string]*os.File
+	Settings map[string]*botSettings
+}
+
+type botSettings struct {
+	status    bool
+	reactRate time.Time
 }
 
 func (self *TwitchBot) Start() {
@@ -104,7 +110,8 @@ func (self *TwitchBot) joinChannels() error {
 
 func (self *TwitchBot) listenChannels() error {
 	self.openChannelLog()
-	for _, channelFile := range self.fileChannelLog {
+	self.initSettings()
+	for _, channelFile := range self.FileChannelLog {
 		defer channelFile.Close()
 	}
 	for {
@@ -118,10 +125,24 @@ func (self *TwitchBot) listenChannels() error {
 			self.Connection.Write([]byte("PONG\r\n"))
 			continue
 		}
+		fmt.Println(line)
 		var userName, channelName, message string = self.handleLine(line)
 		if message != "" && !strings.Contains(userName, self.BotName+".tmi.twitch.tv 353") && !strings.Contains(userName, self.BotName+".tmi.twitch.tv 366") {
-			self.fileChannelLog[channelName].WriteString("[" + timeStamp() + "] Канал:" + channelName + " Ник:" + userName + "\tСообщение:" + message + "\n")
+			self.FileChannelLog[channelName].WriteString("[" + timeStamp() + "] Канал:" + channelName + " Ник:" + userName + "\tСообщение:" + message + "\n")
 			fmt.Print("[" + timeStamp() + "] Канал:" + channelName + "\tНик:" + userName + "\tСообщение:" + message + "\n")
+		}
+		if message == "!bot switch" && (userName == channelName || channelName == self.OwnerBot) {
+			switch self.Settings[channelName].status {
+			case true:
+				self.Settings[channelName].status = false
+				continue
+			case false:
+				self.Settings[channelName].status = true
+				continue
+			}
+		}
+		if !self.Settings[channelName].status {
+			continue
 		}
 		for key := range react {
 			if strings.Contains(message, key) {
@@ -172,7 +193,7 @@ func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username string) strin
 }
 
 func (self *TwitchBot) openChannelLog() {
-	self.fileChannelLog = make(map[string]*os.File)
+	self.FileChannelLog = make(map[string]*os.File)
 	for _, channel := range self.Channels {
 		var err error
 		err = os.MkdirAll("logs/"+channel+" Channel", 0777)
@@ -180,9 +201,19 @@ func (self *TwitchBot) openChannelLog() {
 			fmt.Println("Не удалось создать директорию для канала:", err)
 			err = nil
 		}
-		self.fileChannelLog[channel], err = os.OpenFile("logs/"+channel+" Channel/"+channel+" Log.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		self.FileChannelLog[channel], err = os.OpenFile("logs/"+channel+" Channel/"+channel+" Log.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
 			fmt.Println("Не удалось создать \\ открыть файл:", err)
+		}
+	}
+}
+
+func (self *TwitchBot) initSettings() {
+	self.Settings = make(map[string]*botSettings)
+	for _, channel := range self.Channels {
+		self.Settings[channel] = &botSettings{
+			status:    true,
+			reactRate: time.Now(),
 		}
 	}
 }
@@ -196,7 +227,7 @@ func (self *TwitchBot) say(msg, channel string) {
 	if err != nil {
 		fmt.Println("Ошибка отрпавки сообщения: ", err)
 	}
-	self.fileChannelLog[channel].WriteString("[" + timeStamp() + "] Канал:" + channel + " Ник:" + self.BotName + "\tСообщение:" + msg + "\n")
+	self.FileChannelLog[channel].WriteString("[" + timeStamp() + "] Канал:" + channel + " Ник:" + self.BotName + "\tСообщение:" + msg + "\n")
 	fmt.Print("[" + timeStamp() + "] Канал:" + channel + "\tНик:" + self.BotName + "\tСообщение:" + msg + "\n")
 }
 
