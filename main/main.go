@@ -26,14 +26,14 @@ var cmd = map[string]string{
 	"!ping": "pong!",
 	"!бот":  "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек.",
 	"!bot":  "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек.",
-	"!help": "Доступные комманды: !ping, !бот, !roll, !help, !API uptime, !API status, !API game, !API realname. Владелец бота либо канала может переключить активность бота коммандой !bot switch",
+	"!help": "Доступные комманды: !ping, !бот, !roll, !help, !API uptime, !API Status, !API game, !API realname. Владелец бота либо канала может переключить активность бота коммандой !bot switch",
 	"!roll": "_",
 }
 
 var react = map[string]string{
 	"PogChamp": "PogChamp",
 	"Kappa 7":  "Kappa 7",
-	"Привет": "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
+	"Привет": "MrDestructoid 10000010 10010000 11000010 00100000 01000011 11101000 01100101 00001100 00 (UTF-8)",
 	"привет": "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
 	"Hello": "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
 	"hello": "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
@@ -53,12 +53,64 @@ type TwitchBot struct {
 }
 
 type botSettings struct {
-	status    bool
-	reactRate time.Time
+	Status    bool
+	ReactRate time.Time
+}
+
+func (self *TwitchBot) initBot() {
+	botFile, err := ioutil.ReadFile("BotData.json")
+	if err != nil {
+		fmt.Print("Ошибка чтения данных бота (BotData.Json), должно находиться в корневой папке с исполняемым файлом: ", err)
+	}
+	err = json.Unmarshal(botFile, self)
+	if err != nil {
+		fmt.Print("Ошибка конвертирования структуры из файла в структуру бота: ", err)
+	}
+}
+
+func (self *TwitchBot) initSettings() {
+	self.Settings = make(map[string]*botSettings)
+	for _, channel := range self.Channels {
+		self.Settings[channel] = &botSettings{
+			Status:    true,
+			ReactRate: time.Now(),
+		}
+		channelSettingsJsonFile, err := ioutil.ReadFile("logs/"+channel+" Channel/"+channel+" Settings.json")
+		if err != nil {
+			if strings.Contains(err.Error(),"The system cannot find the file specified.") {
+				os.Create("logs/"+channel+" Channel/"+channel+" Settings.json")
+				channelSettingsJsonFile, _ = ioutil.ReadFile("logs/"+channel+" Channel/"+channel+" Settings.json")
+			}
+			fmt.Print("Ошибка чтения данных настроек канала: ", err)
+		}
+		err = json.Unmarshal(channelSettingsJsonFile, self.Settings[channel])
+		if err != nil {
+			fmt.Print("Ошибка конвертирования структуры из файла в структуру настроек: ", err)
+		}
+		self.saveSettings(channel)
+	}
+}
+
+func (self *TwitchBot) saveSettings(channel string) {
+	channelSettingsJson, err := json.MarshalIndent(*self.Settings[channel], "", " ")
+	if err != nil {
+		fmt.Println(err)
+	}
+	channelSettingsJsonFile, err := os.OpenFile("logs/"+channel+" Channel/"+channel+" Settings.json", os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		fmt.Println("Не удалось создать \\ открыть файл:", err)
+	} else {
+		defer channelSettingsJsonFile.Close()
+	}
+	_, err = channelSettingsJsonFile.Write(channelSettingsJson)
+	if err != nil {
+		fmt.Println("Не записать в файл:", err)
+	}
 }
 
 func (self *TwitchBot) Start() {
 	var err error
+	self.initBot()
 	for {
 		self.connect()
 		err = self.joinChannels()
@@ -131,19 +183,21 @@ func (self *TwitchBot) listenChannels() error {
 			fmt.Print("[" + timeStamp() + "] Канал:" + channelName + "\tНик:" + userName + "\tСообщение:" + message + "\n")
 		}
 		if message == "!bot switch" && (userName == channelName || userName== self.OwnerBot) {
-			switch self.Settings[channelName].status {
+			switch self.Settings[channelName].Status {
 			case true:
-				self.Settings[channelName].status = false
+				self.Settings[channelName].Status = false
 				self.say("Засыпаю...", channelName)
+				self.saveSettings(channelName)
 				continue
 			case false:
-				self.Settings[channelName].status = true
+				self.Settings[channelName].Status = true
 				self.say("Проснулись, улыбнулись!", channelName)
+				self.saveSettings(channelName)
 				continue
 			}
 		}
 		if _, ok := self.Settings[channelName]; ok {
-			if !self.Settings[channelName].status {
+			if !self.Settings[channelName].Status {
 				continue
 			}
 		}
@@ -177,8 +231,8 @@ func (self *TwitchBot) handleAPIcmd(message, channel, username string) string {
 		return "@" + username + " стрим длится уже: " + TwitchAPI.GOTwitch(channel, "uptime")
 	case strings.HasPrefix(message, "!API game"):
 		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "game")
-	case strings.HasPrefix(message, "!API status"):
-		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "status")
+	case strings.HasPrefix(message, "!API Status"):
+		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "Status")
 	case strings.HasPrefix(message, "!API realname"):
 		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "realname")
 	default:
@@ -207,16 +261,6 @@ func (self *TwitchBot) openChannelLog() {
 		self.FileChannelLog[channel], err = os.OpenFile("logs/"+channel+" Channel/"+channel+" Log.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
 			fmt.Println("Не удалось создать \\ открыть файл:", err)
-		}
-	}
-}
-
-func (self *TwitchBot) initSettings() {
-	self.Settings = make(map[string]*botSettings)
-	for _, channel := range self.Channels {
-		self.Settings[channel] = &botSettings{
-			status:    true,
-			reactRate: time.Now(),
 		}
 	}
 }
@@ -275,13 +319,5 @@ func (self *TwitchBot) handleLine(line string) (user, channel, message string) {
 func main() {
 	var bot TwitchBot
 	rand.Seed(time.Now().Unix())
-	botFile, err := ioutil.ReadFile("BotData.json")
-	if err != nil {
-		fmt.Print("Ошибка чтения данных бота (BotData.Json), должно находиться в корневой папке с исполняемым файлом: ", err)
-	}
-	err = json.Unmarshal(botFile, &bot)
-	if err != nil {
-		fmt.Print("Ошибка конвертирования структуры из файла в структуру бота: ", err)
-	}
 	bot.Start()
 }
