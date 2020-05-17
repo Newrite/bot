@@ -19,8 +19,8 @@ const reflyID string = "54987522"
 
 type chattersData struct {
 	Chatters struct {
-		Moderators []string `json:"moderators"`
 		Vips []string `json:"vips"`
+		Moderators []string `json:"moderators"`
 	} `json:"chatters"`
 }
 

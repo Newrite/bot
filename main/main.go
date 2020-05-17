@@ -258,10 +258,10 @@ func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username string) strin
 				return "/timeout "+username+" 120"
 			}
 		}
+		return ""
 	default:
 		return "none"
 	}
-	return ""
 }
 
 func (self *TwitchBot) openChannelLog() {
