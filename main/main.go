@@ -28,6 +28,7 @@ var cmd = map[string]string{
 	"!bot":  "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек.",
 	"!help": "Доступные комманды: !ping, !бот, !roll, !help, !API uptime, !API Status, !API game, !API realname. Владелец бота либо канала может переключить активность бота коммандой !bot switch",
 	"!roll": "_",
+	"!вырубай": "_",
 }
 
 var react = map[string]string{
@@ -228,13 +229,17 @@ func (self *TwitchBot) listenChannels() error {
 func (self *TwitchBot) handleAPIcmd(message, channel, username string) string {
 	switch {
 	case strings.HasPrefix(message, "!API uptime"):
-		return "@" + username + " стрим длится уже: " + TwitchAPI.GOTwitch(channel, "uptime")
+		return "@" + username + " стрим длится уже: " + TwitchAPI.GOTwitch(channel, "uptime", username)
 	case strings.HasPrefix(message, "!API game"):
-		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "game")
-	case strings.HasPrefix(message, "!API Status"):
-		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "Status")
+		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "game", username)
+	case strings.HasPrefix(message, "!API status"):
+		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "status", username)
 	case strings.HasPrefix(message, "!API realname"):
-		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "realname")
+		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "realname", username)
+	case strings.HasPrefix(message, "!API mod"):
+		return "@" + username + " " + TwitchAPI.GOTwitch(channel, "mod", username)
+	//case strings.HasPrefix(message, "!API sub"):
+	//	return "@" + username + " " + TwitchAPI.GOTwitch(channel, "sub", username)
 	default:
 		return ""
 	}
@@ -244,9 +249,19 @@ func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username string) strin
 	switch cmd {
 	case "!roll":
 		return "@" + username + " " + strconv.Itoa(rand.Intn(21))
+	case "!вырубай":
+		if channel == "reflyq" {
+			if temp:= "@" + username + " " + TwitchAPI.GOTwitch(channel, "reflysub", username); !strings.Contains(temp, "unsub") {
+				return temp
+			} else {
+				self.say("@" + username + " Я тебя щас нахуй вырублю, ансаб блять НЫА roflanEbalo", channel)
+				return "/timeout "+username+" 120"
+			}
+		}
 	default:
 		return "none"
 	}
+	return ""
 }
 
 func (self *TwitchBot) openChannelLog() {

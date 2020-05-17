@@ -12,6 +12,17 @@ import (
 
 const clientId string = "gp762nuuoqcoxypju8c569th9wz7q5"
 const oauth string = "Bearer 2m0hfirzasam3tkwo0ty9wwf1wjmz3"
+const bearer string = "Bearer 2m0hfirzasam3tkwo0ty9wwf1wjmz3"
+const clientIdRef string = "cuj07xgrz9hv2rfq2gev4lkvlu3tlg"
+const oauthRef string = "Bearer 6jcz1sstmyh83pzjn5rdjyxsssyl00"
+const reflyID string = "54987522"
+
+type chattersData struct {
+	Chatters struct {
+		Moderators []string `json:"moderators"`
+		Vips []string `json:"vips"`
+	} `json:"chatters"`
+}
 
 type usersData struct {
 	User []userData `json:"data"`
@@ -58,7 +69,47 @@ type streamData struct {
 	Started_at time.Time `json:"started_at"`
 }
 
-func channelDataParse(data *usersData, cmd string) string {
+type subsData struct {
+	SubData []subData `json:"data"`
+}
+
+type subData struct {
+	User_name string `json:"user_name"`
+}
+
+func subsDataParse(username string, Data *usersData) string {
+	client := &http.Client{}
+	url := "https://api.twitch.tv/helix/subscriptions?broadcaster_id="+Data.User[0].Id
+	req, err := http.NewRequest("GET", url, nil)
+	req.Header.Set("Accept", "application/vnd.twitchtv.v5+json")
+	req.Header.Set("Authorization", oauthRef)
+	req.Header.Add("Client-ID", clientIdRef)
+	if err != nil {
+		panic(err.Error())
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err.Error())
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err.Error())
+	}
+	var data subsData
+	err = json.Unmarshal(body, &data)
+	username = GOTwitch(username, "realname", username)
+	if err != nil {
+		return "Ошибка парсинга в json streamsData"
+	}
+	for _, name := range data.SubData {
+		if name.User_name == username {
+			return "Саб"
+		}
+	}
+	return "Не саб"
+}
+
+func channelDataParse(data *usersData, cmd, username string) string {
 	client := &http.Client{}
 	if len(data.User) == 0 {
 		return "Не удалось получить данные пользователей"
@@ -81,6 +132,8 @@ func channelDataParse(data *usersData, cmd string) string {
 	}
 	var dataChannel channelData
 	json.Unmarshal(body, &dataChannel)
+	fmt.Println(string(body))
+	fmt.Println("Data:", dataChannel)
 	switch cmd {
 	case "game":
 		return dataChannel.Game
@@ -94,7 +147,7 @@ func channelDataParse(data *usersData, cmd string) string {
 	return "Ошибка"
 }
 
-func GOTwitch(channel, cmd string) string {
+func GOTwitch(channel, cmd, username string) string {
 	client := &http.Client{}
 	url := "https://api.twitch.tv/helix/users?login=" + channel
 	req, err := http.NewRequest("GET", url, nil)
@@ -114,17 +167,15 @@ func GOTwitch(channel, cmd string) string {
 	}
 	var data usersData
 	json.Unmarshal(body, &data)
-	fmt.Println("Body:", string(body))
-	fmt.Println("Data:",data)
 	switch cmd {
 	case "game":
-		return channelDataParse(&data, cmd)
+		return channelDataParse(&data, cmd, username)
 	case "followers":
-		return channelDataParse(&data, cmd)
+		return channelDataParse(&data, cmd, username)
 	case "channelcreated":
-		return channelDataParse(&data, cmd)
+		return channelDataParse(&data, cmd, username)
 	case "status":
-		return channelDataParse(&data, cmd)
+		return channelDataParse(&data, cmd, username)
 	case "realname":
 		if len(data.User) > 0 {
 			return data.User[0].Display_name
@@ -133,8 +184,63 @@ func GOTwitch(channel, cmd string) string {
 		}
 	case "uptime":
 		return streamDataParse(channel, cmd)
+	case "sub":
+		return subsDataParse(username, &data)
+	case "mod":
+		return moderOrVip(channel, cmd, username)
+	case "reflysub":
+		if moderOrVip(channel, "mod", username) == "mod" {
+			return "Моё уважение модераторскому корпусу, но нет roflanZdarova"
+		}
+		if subsDataParse(username, &data) == "Саб" {
+			if moderOrVip(channel, "vip", username) == "vip" {
+				return "Можно пожалуйста постримить? PepeHands"
+			} else {
+				return "Зачем ты это делаешь? roflanZachto"
+			}
+		} else {
+			if moderOrVip(channel, "vip", username) == "vip" {
+				return "Ты ходишь по тонкому льду, випчик.. Ладно живи roflanEbalo"
+			} else {
+				return "unsub"
+			}
+		}
 	}
 	return "ничего"
+}
+
+func moderOrVip(channel, cmd, username string) string {
+	client := &http.Client{}
+	url := "https://tmi.twitch.tv/group/user/reflyq/chatters"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		panic(err.Error())
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err.Error())
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err.Error())
+	}
+	var chat chattersData
+	json.Unmarshal(body, &chat)
+	switch cmd {
+	case "vip":
+		for _, name := range chat.Chatters.Vips {
+			if name == username {
+				return "vip"
+			}
+		}
+	case "mod":
+		for _, name := range chat.Chatters.Moderators {
+			if name == username {
+				return "mod"
+			}
+		}
+	}
+	return "nothing"
 }
 
 func streamDataParse(channel, cmd string) string {
