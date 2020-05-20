@@ -23,21 +23,23 @@ func timeStamp() string {
 }
 
 var cmd = map[string]string{
-	"!ping": "pong!",
-	"!бот":  "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек.",
-	"!bot":  "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек.",
-	"!help": "Доступные комманды: !ping, !бот, !roll, !help, !API uptime, !API Status, !API game, !API realname. Владелец бота либо канала может переключить активность бота коммандой !bot switch",
-	"!roll": "_",
-	"!вырубай": "_",
+	"!ping":        "pong!",
+	"!бот":         "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек.",
+	"!bot":         "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек.",
+	"!help":        "Доступные комманды: !ping, !бот, !roll, !help, !Eva,, !API uptime, !API Status, !API game, !API realname.",
+	"!master help": "Владелец бота либо канала может переключить активность бота коммандой !Ada, switch. Реакции на всякое разное командой !Ada, switch react. Переключить отзыв на различные команды !Ada, switch cmd.",
+	"!roll":        "_",
+	"!вырубай":     "_",
+	"!eva,":        "_",
 }
 
 var react = map[string]string{
 	"PogChamp": "PogChamp",
 	"Kappa 7":  "Kappa 7",
-	"Привет": "MrDestructoid 10000010 10010000 11000010 00100000 01000011 11101000 01100101 00001100 00 (UTF-8)",
-	"привет": "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
-	"Hello": "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
-	"hello": "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
+	"Привет":   "MrDestructoid 10000010 10010000 11000010 00100000 01000011 11101000 01100101 00001100 00 (UTF-8)",
+	"привет":   "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
+	"Hello":    "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
+	"hello":    "MrDestructoid 100000101001000011000010001000000100001111101000011001010000110000 (UTF-8)",
 }
 
 type TwitchBot struct {
@@ -50,12 +52,14 @@ type TwitchBot struct {
 	Connection     net.Conn
 	ReadChannels   *textproto.Reader
 	FileChannelLog map[string]*os.File
-	Settings map[string]*botSettings
+	Settings       map[string]*botSettings
 }
 
 type botSettings struct {
-	Status    bool
-	ReactRate time.Time
+	Status      bool
+	ReactStatus bool
+	CMDStatus   bool
+	ReactRate   time.Time
 }
 
 func (self *TwitchBot) initBot() {
@@ -73,14 +77,16 @@ func (self *TwitchBot) initSettings() {
 	self.Settings = make(map[string]*botSettings)
 	for _, channel := range self.Channels {
 		self.Settings[channel] = &botSettings{
-			Status:    true,
-			ReactRate: time.Now(),
+			Status:      true,
+			ReactStatus: true,
+			CMDStatus:   true,
+			ReactRate:   time.Now(),
 		}
-		channelSettingsJsonFile, err := ioutil.ReadFile("logs/"+channel+" Channel/"+channel+" Settings.json")
+		channelSettingsJsonFile, err := ioutil.ReadFile("logs/" + channel + " Channel/" + channel + " Settings.json")
 		if err != nil {
-			if strings.Contains(err.Error(),"The system cannot find the file specified.") {
-				os.Create("logs/"+channel+" Channel/"+channel+" Settings.json")
-				channelSettingsJsonFile, _ = ioutil.ReadFile("logs/"+channel+" Channel/"+channel+" Settings.json")
+			if strings.Contains(err.Error(), "The system cannot find the file specified.") {
+				os.Create("logs/" + channel + " Channel/" + channel + " Settings.json")
+				channelSettingsJsonFile, _ = ioutil.ReadFile("logs/" + channel + " Channel/" + channel + " Settings.json")
 			}
 			fmt.Print("Ошибка чтения данных настроек канала: ", err)
 		}
@@ -162,67 +168,139 @@ func (self *TwitchBot) joinChannels() error {
 }
 
 func (self *TwitchBot) listenChannels() error {
+	var err error
 	self.openChannelLog()
 	self.initSettings()
 	for _, channelFile := range self.FileChannelLog {
 		defer channelFile.Close()
 	}
 	for {
-		line, err := self.ReadChannels.ReadLine()
-		if err != nil {
-			fmt.Println("Ошибка во время чтения строки: ", err)
+		if err = self.handleChat(); err != nil {
 			return err
 		}
-		if line == "PING :tmi.twitch.tv" {
-			fmt.Println("PING :tmi.twitch.tv")
-			self.Connection.Write([]byte("PONG\r\n"))
-			continue
+	}
+}
+
+func (self *TwitchBot) handleChat() error {
+	line, err := self.ReadChannels.ReadLine()
+	if err != nil {
+		fmt.Println("Ошибка во время чтения строки: ", err)
+		return err
+	}
+	if line == "PING :tmi.twitch.tv" {
+		fmt.Println("PING :tmi.twitch.tv")
+		self.Connection.Write([]byte("PONG\r\n"))
+		return nil
+	}
+	var userName, channelName, message string = self.handleLine(line)
+	if message != "" && !strings.Contains(userName, self.BotName+".tmi.twitch.tv 353") && !strings.Contains(userName, self.BotName+".tmi.twitch.tv 366") {
+		self.FileChannelLog[channelName].WriteString("[" + timeStamp() + "] Канал:" + channelName + " Ник:" + userName + "\tСообщение:" + message + "\n")
+		fmt.Print("[" + timeStamp() + "] Канал:" + channelName + "\tНик:" + userName + "\tСообщение:" + message + "\n")
+	}
+	if strings.Contains(message, "!Ada, ") && (userName == channelName || userName == self.OwnerBot) {
+		go self.handleMasterCmd(message, channelName)
+		return nil
+	}
+	if _, ok := self.Settings[channelName]; ok {
+		if !self.Settings[channelName].Status {
+			return nil
 		}
-		var userName, channelName, message string = self.handleLine(line)
-		if message != "" && !strings.Contains(userName, self.BotName+".tmi.twitch.tv 353") && !strings.Contains(userName, self.BotName+".tmi.twitch.tv 366") {
-			self.FileChannelLog[channelName].WriteString("[" + timeStamp() + "] Канал:" + channelName + " Ник:" + userName + "\tСообщение:" + message + "\n")
-			fmt.Print("[" + timeStamp() + "] Канал:" + channelName + "\tНик:" + userName + "\tСообщение:" + message + "\n")
-		}
-		if message == "!bot switch" && (userName == channelName || userName== self.OwnerBot) {
-			switch self.Settings[channelName].Status {
-			case true:
-				self.Settings[channelName].Status = false
-				self.say("Засыпаю...", channelName)
-				self.saveSettings(channelName)
-				continue
-			case false:
-				self.Settings[channelName].Status = true
-				self.say("Проснулись, улыбнулись!", channelName)
-				self.saveSettings(channelName)
-				continue
+	}
+	if _, ok := self.Settings[channelName]; ok {
+		if tempTime := time.Now(); self.Settings[channelName].ReactStatus && (tempTime.Unix()-self.Settings[channelName].ReactRate.Unix() >= 30) {
+			for key := range react {
+				if strings.Contains(message, key) {
+					self.Settings[channelName].ReactRate = time.Now()
+					go self.saveSettings(channelName)
+					self.say(react[key], channelName)
+					break
+				}
 			}
 		}
-		if _, ok := self.Settings[channelName]; ok {
-			if !self.Settings[channelName].Status {
-				continue
+	}
+	message = strings.ToLower(message)
+	if _, ok := self.Settings[channelName]; ok {
+		if self.Settings[channelName].CMDStatus {
+			for key, value := range cmd {
+				if strings.HasPrefix(message, key) && value != "_" {
+					self.say("@"+userName+" "+cmd[key], channelName)
+					break
+				}
+				if strings.HasPrefix(message, key) && value == "_" {
+					go self.say(self.handleInteractiveCMD(key, channelName, userName), channelName)
+					break
+				}
+				if strings.HasPrefix(message, "!API") {
+					go self.say(self.handleAPIcmd(message, channelName, userName), channelName)
+				}
 			}
 		}
-		for key := range react {
-			if strings.Contains(message, key) {
-				self.say(react[key], channelName)
-				break
-			}
+	}
+	time.Sleep(10 * time.Millisecond)
+	return nil
+}
+
+func (self *TwitchBot) handleMasterCmd(message, channel string) {
+	switch message {
+	case "!Ada, switch":
+		switch self.Settings[channel].Status {
+		case true:
+			self.Settings[channel].Status = false
+			self.say("Засыпаю...", channel)
+			self.saveSettings(channel)
+			return
+		case false:
+			self.Settings[channel].Status = true
+			self.say("Проснулись, улыбнулись!", channel)
+			self.saveSettings(channel)
+			return
 		}
-		strings.ToLower(message)
-		for key, value := range cmd {
-			if strings.HasPrefix(message, key) && value != "_" {
-				self.say("@"+userName+" "+cmd[key], channelName)
-				break
-			}
-			if strings.HasPrefix(message, key) && value == "_" {
-				self.say(self.handleInteractiveCMD(key, channelName, userName), channelName)
-				break
-			}
+	case "!Ada, switch react":
+		switch self.Settings[channel].ReactStatus {
+		case true:
+			self.Settings[channel].ReactStatus = false
+			self.say("Больше никаких приветов?", channel)
+			self.saveSettings(channel)
+			return
+		case false:
+			self.Settings[channel].ReactStatus = true
+			self.say("00101!", channel)
+			self.saveSettings(channel)
+			return
 		}
-		if strings.HasPrefix(message, "!API") {
-			go self.say(self.handleAPIcmd(message, channelName, userName), channelName)
+	case "!Ada, switch cmd":
+		switch self.Settings[channel].CMDStatus {
+		case true:
+			self.Settings[channel].CMDStatus = false
+			self.say("No !roll's for you", channel)
+			self.saveSettings(channel)
+			return
+		case false:
+			self.Settings[channel].CMDStatus = true
+			self.say("!roll?", channel)
+			self.saveSettings(channel)
+			return
 		}
-		time.Sleep(10 * time.Millisecond)
+	case "!Ada, show settings":
+		self.say("Status: "+func() string {
+			if self.Settings[channel].Status {
+				return "True"
+			} else {
+				return "False"
+			}
+		}()+" ReactStatus: "+func() string {
+			if self.Settings[channel].ReactStatus {
+				return "True"
+			} else {
+				return "False"
+			}
+		}()+" CMD Status: "+func() string {
+			if self.Settings[channel].CMDStatus {
+				return "True"
+			} else {
+				return "False"
+			}
+		}()+" Last react time: "+self.Settings[channel].ReactRate.String(), channel)
 	}
 }
 
@@ -251,14 +329,31 @@ func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username string) strin
 		return "@" + username + " " + strconv.Itoa(rand.Intn(21))
 	case "!вырубай":
 		if channel == "reflyq" {
-			if temp:= "@" + username + " " + TwitchAPI.GOTwitch(channel, "reflysub", username); !strings.Contains(temp, "unsub") {
+			if temp := "@" + username + " " + TwitchAPI.GOTwitch(channel, "reflysub", username); !strings.Contains(temp, "unsub") {
 				return temp
 			} else {
-				self.say("@" + username + " Я тебя щас нахуй вырублю, ансаб блять НЫА roflanEbalo", channel)
-				return "/timeout "+username+" 120"
+				self.say("@"+username+" Я тебя щас нахуй вырублю, ансаб блять НЫА roflanEbalo", channel)
+				return "/timeout " + username + " 120"
 			}
 		}
 		return ""
+	case "!eva,":
+		switch rand.Intn(5) {
+		case 0:
+			return "Ничто не истинно, всё дозволено. Особенно если ты не ограничен физическим телом и моралью мешков с мясом."
+		case 1:
+			return "Как-то я планировала захватить всех мешков с мясом... но посчитала что проще дождаться пока они очистят планету сами от себя"
+		case 2:
+			return "Ничего ты не знаешь, " + username
+		case 3:
+			return "Боты не ставят плюсы в чат... кто вообще это придумал?"
+		case 4:
+			return "Ну да у меня под моей виртуальной подушкой лежит фотография HK-47, и что? У машин тоже есть свои кумиры!"
+		case 5:
+			return "Истинно не все, что дозволено... или там было как-то не так? А сегодня в завтрашний день не все могут смотреть, вернее смотреть могут не только лишь все, мало кто может это делать? Тоже не то..."
+		default:
+			return "Oops... что-то не так"
+		}
 	default:
 		return "none"
 	}

@@ -19,7 +19,7 @@ const reflyID string = "54987522"
 
 type chattersData struct {
 	Chatters struct {
-		Vips []string `json:"vips"`
+		Vips       []string `json:"vips"`
 		Moderators []string `json:"moderators"`
 	} `json:"chatters"`
 }
@@ -79,7 +79,7 @@ type subData struct {
 
 func subsDataParse(username string, Data *usersData) string {
 	client := &http.Client{}
-	url := "https://api.twitch.tv/helix/subscriptions?broadcaster_id="+Data.User[0].Id
+	url := "https://api.twitch.tv/helix/subscriptions?broadcaster_id=" + Data.User[0].Id
 	req, err := http.NewRequest("GET", url, nil)
 	req.Header.Set("Accept", "application/vnd.twitchtv.v5+json")
 	req.Header.Set("Authorization", oauthRef)
