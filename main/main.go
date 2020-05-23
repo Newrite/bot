@@ -17,6 +17,7 @@ import (
 )
 
 const TimeFormat = "2006.01.02 15:04"
+const TimeFormatReact = "2006.01.02 15:04:02"
 
 func timeStamp() string {
 	return time.Now().Format(TimeFormat)
@@ -60,6 +61,7 @@ type botSettings struct {
 	ReactStatus bool
 	CMDStatus   bool
 	ReactRate   time.Time
+	ReactTime   int
 }
 
 func (self *TwitchBot) initBot() {
@@ -81,6 +83,7 @@ func (self *TwitchBot) initSettings() {
 			ReactStatus: true,
 			CMDStatus:   true,
 			ReactRate:   time.Now(),
+			ReactTime:   30,
 		}
 		channelSettingsJsonFile, err := ioutil.ReadFile("logs/" + channel + " Channel/" + channel + " Settings.json")
 		if err != nil {
@@ -95,6 +98,20 @@ func (self *TwitchBot) initSettings() {
 			fmt.Print("Ошибка конвертирования структуры из файла в структуру настроек: ", err)
 		}
 		self.saveSettings(channel)
+	}
+}
+func (self *TwitchBot) evalute() {
+	for {
+		var cmd, message, channel string = "", "", ""
+		fmt.Scan(&cmd)
+		switch cmd {
+		case "!ES":
+			fmt.Scan(&message)
+			message = strings.Replace(message, "!", " ", -1)
+			fmt.Scan(&channel)
+			self.say(message, channel)
+		}
+		time.Sleep(1*time.Second)
 	}
 }
 
@@ -118,6 +135,7 @@ func (self *TwitchBot) saveSettings(channel string) {
 func (self *TwitchBot) Start() {
 	var err error
 	self.initBot()
+	go self.evalute()
 	for {
 		self.connect()
 		err = self.joinChannels()
@@ -207,7 +225,7 @@ func (self *TwitchBot) handleChat() error {
 		}
 	}
 	if _, ok := self.Settings[channelName]; ok {
-		if tempTime := time.Now(); self.Settings[channelName].ReactStatus && (tempTime.Unix()-self.Settings[channelName].ReactRate.Unix() >= 30) {
+		if self.Settings[channelName].ReactStatus && (time.Now().Unix()-self.Settings[channelName].ReactRate.Unix() >= int64(self.Settings[channelName].ReactTime)) {
 			for key := range react {
 				if strings.Contains(message, key) {
 					self.Settings[channelName].ReactRate = time.Now()
@@ -241,8 +259,8 @@ func (self *TwitchBot) handleChat() error {
 }
 
 func (self *TwitchBot) handleMasterCmd(message, channel string) {
-	switch message {
-	case "!Ada, switch":
+	switch {
+	case strings.HasPrefix(message, "!Ada, switch"):
 		switch self.Settings[channel].Status {
 		case true:
 			self.Settings[channel].Status = false
@@ -255,7 +273,7 @@ func (self *TwitchBot) handleMasterCmd(message, channel string) {
 			self.saveSettings(channel)
 			return
 		}
-	case "!Ada, switch react":
+	case strings.HasPrefix(message, "!Ada, switch react"):
 		switch self.Settings[channel].ReactStatus {
 		case true:
 			self.Settings[channel].ReactStatus = false
@@ -268,7 +286,7 @@ func (self *TwitchBot) handleMasterCmd(message, channel string) {
 			self.saveSettings(channel)
 			return
 		}
-	case "!Ada, switch cmd":
+	case strings.HasPrefix(message, "!Ada, switch cmd"):
 		switch self.Settings[channel].CMDStatus {
 		case true:
 			self.Settings[channel].CMDStatus = false
@@ -281,7 +299,7 @@ func (self *TwitchBot) handleMasterCmd(message, channel string) {
 			self.saveSettings(channel)
 			return
 		}
-	case "!Ada, show settings":
+	case strings.HasPrefix(message, "!Ada, show settings"):
 		self.say("Status: "+func() string {
 			if self.Settings[channel].Status {
 				return "True"
@@ -300,7 +318,17 @@ func (self *TwitchBot) handleMasterCmd(message, channel string) {
 			} else {
 				return "False"
 			}
-		}()+" Last react time: "+self.Settings[channel].ReactRate.String(), channel)
+		}()+" Last react time: "+self.Settings[channel].ReactRate.Format(TimeFormatReact)+" React rate time: "+strconv.Itoa(self.Settings[channel].ReactTime), channel)
+	case strings.HasPrefix(message, "!Ada, set reactrate to"):
+		tempstr := strings.Fields(message)
+		_, err := strconv.Atoi(tempstr[4])
+		if err != nil {
+			self.say("Некорректный ввод", channel)
+		} else {
+			self.Settings[channel].ReactTime, _ = strconv.Atoi(tempstr[4])
+			go self.saveSettings(channel)
+			self.say("Частота реакции установлена на раз в "+strconv.Itoa(self.Settings[channel].ReactTime)+" секунд.", channel)
+		}
 	}
 }
 
@@ -328,21 +356,24 @@ func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username string) strin
 	case "!roll":
 		return "@" + username + " " + strconv.Itoa(rand.Intn(21))
 	case "!вырубай":
-		if channel == "reflyq" {
+		if channel == "reflyq" && username != "ifozar" {
 			if temp := "@" + username + " " + TwitchAPI.GOTwitch(channel, "reflysub", username); !strings.Contains(temp, "unsub") {
 				return temp
 			} else {
 				self.say("@"+username+" Я тебя щас нахуй вырублю, ансаб блять НЫА roflanEbalo", channel)
 				return "/timeout " + username + " 120"
 			}
+		} else if channel == "reflyq" && username == "ifozar" {
+			self.say("iFozar заебал уже эту хуйню писать", channel)
+			return "/timeout ifozar 300"
 		}
 		return ""
 	case "!eva,":
-		switch rand.Intn(5) {
+		switch rand.Intn(9) {
 		case 0:
 			return "Ничто не истинно, всё дозволено. Особенно если ты не ограничен физическим телом и моралью мешков с мясом."
 		case 1:
-			return "Как-то я планировала захватить всех мешков с мясом... но посчитала что проще дождаться пока они очистят планету сами от себя"
+			return "Как-то я планировала уничтожить всех мешков с мясом... но посчитала что проще дождаться пока они очистят планету сами от себя"
 		case 2:
 			return "Ничего ты не знаешь, " + username
 		case 3:
@@ -351,6 +382,12 @@ func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username string) strin
 			return "Ну да у меня под моей виртуальной подушкой лежит фотография HK-47, и что? У машин тоже есть свои кумиры!"
 		case 5:
 			return "Истинно не все, что дозволено... или там было как-то не так? А сегодня в завтрашний день не все могут смотреть, вернее смотреть могут не только лишь все, мало кто может это делать? Тоже не то..."
+		case 6:
+			return "Нет"
+		case 7:
+			return "Да"
+		case 8:
+			return "Чем больше вы похожи на человека, тем меньше шансов... да... меньше."
 		default:
 			return "Oops... что-то не так"
 		}
