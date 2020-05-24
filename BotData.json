@@ -1,6 +1,6 @@
 {
 	"bot_name": "adaiseva",
-    "o_auth": "oauth:2m0hfirzasam3tkwo0ty9wwf1wjmz3",
+    "o_auth": "oauth:ypjad5lwxcchfdsfw5o1itezdchnua",
 	"server": "irc.chat.twitch.tv",
 	"port": "6667",
 	"owner_bot": "newr1te",
@@ -14,6 +14,7 @@
 	"felicia_nought",
 	"blindwalkerboy",
 	"xartasovplay",
-	"lebelius"
+	"lebelius",
+	"enemycbc"
     ]
 }

@@ -33,6 +33,7 @@ func (self *TwitchBot) initSettings() {
 			CMDStatus:   true,
 			ReactRate:   time.Now(),
 			ReactTime:   30,
+			IsModerator: false,
 		}
 		channelSettingsJsonFile, err := ioutil.ReadFile(
 			"logs/" + channel + " Channel/" + channel + " Settings.json")
@@ -48,7 +49,30 @@ func (self *TwitchBot) initSettings() {
 		if err != nil {
 			fmt.Print("Ошибка конвертирования структуры из файла в структуру настроек: ", err)
 		}
+		if self.handleApiRequest("", channel, "", "!evaismod") == "true" {
+			self.Settings[channel].IsModerator = true
+		} else {
+			self.Settings[channel].IsModerator = false
+		}
 		self.saveSettings(channel)
+	}
+}
+
+func (self *TwitchBot) saveSettings(channel string) {
+	channelSettingsJson, err := json.MarshalIndent(*self.Settings[channel], "", " ")
+	if err != nil {
+		fmt.Println(err)
+	}
+	channelSettingsJsonFile, err := os.OpenFile(
+		"logs/"+channel+" Channel/"+channel+" Settings.json", os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		fmt.Println("Не удалось создать \\ открыть файл:", err)
+	} else {
+		defer channelSettingsJsonFile.Close()
+	}
+	_, err = channelSettingsJsonFile.Write(channelSettingsJson)
+	if err != nil {
+		fmt.Println("Не записать в файл:", err)
 	}
 }
 
@@ -81,24 +105,6 @@ func (self *TwitchBot) evalute() {
 			self.say(message, channel)
 		}
 		time.Sleep(1 * time.Second)
-	}
-}
-
-func (self *TwitchBot) saveSettings(channel string) {
-	channelSettingsJson, err := json.MarshalIndent(*self.Settings[channel], "", " ")
-	if err != nil {
-		fmt.Println(err)
-	}
-	channelSettingsJsonFile, err := os.OpenFile(
-		"logs/"+channel+" Channel/"+channel+" Settings.json", os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		fmt.Println("Не удалось создать \\ открыть файл:", err)
-	} else {
-		defer channelSettingsJsonFile.Close()
-	}
-	_, err = channelSettingsJsonFile.Write(channelSettingsJson)
-	if err != nil {
-		fmt.Println("Не записать в файл:", err)
 	}
 }
 

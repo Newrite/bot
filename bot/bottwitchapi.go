@@ -80,6 +80,12 @@ func (self *TwitchBot) handleApiRequest(username, channel, message, cmd string) 
 				return "unsub"
 			}
 		}
+	case "!evaismod":
+		if self.requestChatterData(channel, self.BotName, "mod") == "mod" {
+			return "true"
+		} else {
+			return "false"
+		}
 	default:
 		return "error"
 	}

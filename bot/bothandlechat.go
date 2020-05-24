@@ -19,7 +19,6 @@ func (self *TwitchBot) handleChat() error {
 		self.Connection.Write([]byte("PONG\r\n"))
 		return nil
 	}
-	fmt.Println(line)
 	var userName, channelName, message string = self.handleLine(line)
 	if message != "" && !strings.Contains(userName, self.BotName+".tmi.twitch.tv 353") &&
 		!strings.Contains(userName, self.BotName+".tmi.twitch.tv 366") {
@@ -133,6 +132,12 @@ func (self *TwitchBot) handleMasterCmd(message, channel string) {
 			} else {
 				return "False"
 			}
+		}()+" Moderator Status: "+func() string {
+			if self.Settings[channel].IsModerator {
+				return "True"
+			} else {
+				return "False"
+			}
 		}()+" Last react time: "+self.Settings[channel].ReactRate.Format(TimeFormatReact)+
 			" React rate time: "+strconv.Itoa(self.Settings[channel].ReactTime), channel)
 	case strings.HasPrefix(message, "!Ada, set reactrate to"):
@@ -173,7 +178,7 @@ func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username string) strin
 			return "/timeout ifozar 300"
 		}
 		return ""
-	case "!eva,":
+	case "!eva":
 		switch rand.Intn(9) {
 		case 0:
 			return "Ничто не истинно, всё дозволено." +
@@ -199,6 +204,32 @@ func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username string) strin
 			return "Чем больше вы похожи на человека, тем меньше шансов... да... меньше."
 		default:
 			return "Oops... что-то не так"
+		}
+	case "!билд":
+		switch rand.Intn(10) {
+		case 0:
+			return "Порхает как тигр, жалит как бабочка."
+		case 1:
+			return "Превосходный, почти как у HK-47-семпая."
+		case 2:
+			return "Этот билд будет убивать. Грязекрабов, например."
+		case 3:
+			return "Нужно добавить пару-кам, иначе не поймем когда встретим тигра."
+		case 4:
+			return "Сразу видно, билдился опытный dungeon master, учтен и do a**l и fist**g, защитит и от leatherman's" +
+				" и от падения на two blocks down. И это все всего за three hundred bucks!"
+		case 5:
+			return "До первого медведя из школы затаившейся листвы."
+		case 6:
+			return "Как этот билд ни крути, со всех сторон экзобар."
+		case 7:
+			return "Антисвинопас. Всем разойтись."
+		case 8:
+			return "Знание - сила, а сила есть - ума не надо."
+		case 9:
+			return "Чатлане, у нас гогнобилд, возможно рип, по респекам."
+		default:
+			return "ОоОps... что-то не так"
 		}
 	default:
 		return "none"

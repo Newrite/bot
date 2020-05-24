@@ -17,15 +17,18 @@ func timeStamp() string {
 
 var cmd = map[string]string{
 	"!ping": "pong!",
-	"!бот":  "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек.",
-	"!help": "Доступные комманды: !ping, !бот, !roll, !help, !master help, !Eva,,",
+	"!бот":  "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек. " +
+		"Живет на VPS с убунтой размещенном в москоу сити. Рекомендации, пожелания и" +
+		" прочая можно присылать на adaiseva.newrite@gmail.com",
+	"!help": "Доступные комманды: !ping, !бот, !roll, !help, !master help, !Eva",
 	"!master help": "Владелец бота либо канала может переключить активность бота коммандой !Ada, switch." +
 		" Реакции на всякое разное командой !Ada, switch react. " +
 		"Переключить отзыв на различные команды !Ada, switch cmd." +
 		" !Ada, set reactrate to <значение> выставляет настройку частоты реакции на различные сообщения в чате",
 	"!roll":    "_",
 	"!вырубай": "_",
-	"!eva,":    "_",
+	"!eva":     "_",
+	"!билд":    "_",
 }
 
 var react = map[string]string{
@@ -57,6 +60,7 @@ type botSettings struct {
 	CMDStatus   bool
 	ReactRate   time.Time
 	ReactTime   int
+	IsModerator bool
 }
 
 type apiConfig struct {
