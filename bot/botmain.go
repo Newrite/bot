@@ -17,7 +17,7 @@ func timeStamp() string {
 
 var cmd = map[string]string{
 	"!ping": "pong!",
-	"!бот":  "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек. " +
+	"!бот": "AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек. " +
 		"Живет на VPS с убунтой размещенном в москоу сити. Рекомендации, пожелания и" +
 		" прочая можно присылать на adaiseva.newrite@gmail.com",
 	"!help": "Доступные комманды: !ping, !бот, !roll, !help, !master help, !Eva",
