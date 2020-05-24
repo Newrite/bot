@@ -142,7 +142,7 @@ func (self *TwitchBot) handleMasterCmd(message, channel string) {
 			" React rate time: "+strconv.Itoa(self.Settings[channel].ReactTime), channel)
 	case strings.HasPrefix(message, "!Ada, set reactrate to"):
 		tempstr := strings.Fields(message)
-		if len(tempstr) < 4 {
+		if len(tempstr) < 5 {
 			self.say("Некорректный ввод", channel)
 		} else {
 			_, err := strconv.Atoi(tempstr[4])
