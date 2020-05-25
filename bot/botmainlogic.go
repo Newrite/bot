@@ -76,6 +76,48 @@ func (self *TwitchBot) saveSettings(channel string) {
 	}
 }
 
+
+func (self *TwitchBot) initViewersData() {
+	self.Viewers = make(map[string]*viewersData)
+	for _, channel := range self.Channels {
+		self.Viewers[channel] = &viewersData{}
+		channelViwerFileJson, err := ioutil.ReadFile(
+			"logs/" + channel + " Channel/" + channel + " ViewersData.json")
+		if err != nil {
+			if strings.Contains(err.Error(), "The system cannot find the file specified.") {
+				os.Create("logs/" + channel + " Channel/" + channel + " ViewersData.json")
+				channelViwerFileJson, _ = ioutil.ReadFile(
+					"logs/" + channel + " Channel/" + channel + " ViewersData.json")
+			}
+			fmt.Print("Ошибка чтения данных зрителей канала: ", err)
+		}
+		err = json.Unmarshal(channelViwerFileJson, &self.Viewers[channel].Viewers)
+		if err != nil {
+			fmt.Print("Ошибка конвертирования структуры из файла в структуру зрителей: ", err)
+		}
+		self.saveViewersData(channel)
+	}
+}
+
+func (self *TwitchBot) saveViewersData(channel string) {
+	self.handleApiRequest("", channel, "", "requestallviewers")
+	channelViewerJson, err := json.MarshalIndent(&self.Viewers[channel].Viewers, "", " ")
+	if err != nil {
+		fmt.Println(err)
+	}
+	channelViewersFileJson, err := os.OpenFile(
+		"logs/"+channel+" Channel/"+channel+" ViewersData.json", os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		fmt.Println("Не удалось создать \\ открыть файл:", err)
+	} else {
+		defer channelViewersFileJson.Close()
+	}
+	_, err = channelViewersFileJson.Write(channelViewerJson)
+	if err != nil {
+		fmt.Println("Не записать в файл:", err)
+	}
+}
+
 func (self *TwitchBot) openChannelLog() {
 	self.FileChannelLog = make(map[string]*os.File)
 	for _, channel := range self.Channels {
@@ -113,6 +155,7 @@ func (self *TwitchBot) Start() {
 	self.initBot()
 	self.initApiConfig()
 	go self.evalute()
+	self.initViewersData()
 	for {
 		self.connect()
 		err = self.joinChannels()

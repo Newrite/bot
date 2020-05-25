@@ -140,6 +140,7 @@ func (self *TwitchBot) handleMasterCmd(message, channel string) {
 			}
 		}()+" Last react time: "+self.Settings[channel].ReactRate.Format(TimeFormatReact)+
 			" React rate time: "+strconv.Itoa(self.Settings[channel].ReactTime), channel)
+		return
 	case strings.HasPrefix(message, "!Ada, set reactrate to"):
 		tempstr := strings.Fields(message)
 		if len(tempstr) < 5 {
@@ -153,8 +154,51 @@ func (self *TwitchBot) handleMasterCmd(message, channel string) {
 				go self.saveSettings(channel)
 				self.say("Частота реакции установлена на раз в "+
 					strconv.Itoa(self.Settings[channel].ReactTime)+" секунд.", channel)
+				return
 			}
 		}
+	case strings.HasPrefix(message, "!Ada, set points"):
+		tempstr := strings.Fields(message)
+		if len(tempstr) < 6 {
+			self.say("Некорректный ввод", channel)
+		} else {
+			_, err := strconv.Atoi(tempstr[5])
+			if err != nil {
+				self.say("Некорректный ввод", channel)
+			} else {
+				tempstr[3] = strings.TrimPrefix(tempstr[3], "@")
+				tempstr[3] = strings.ToLower(tempstr[3])
+				for _, viewer := range self.Viewers[channel].Viewers {
+					if viewer.Name == tempstr[3] {
+						viewer.Points, _ = strconv.Atoi(tempstr[5])
+						go self.saveViewersData(channel)
+						self.say("Поинты "+viewer.Name+" установлены в "+tempstr[5], channel)
+						return
+					}
+				}
+				self.say("Не нашла зрителя в базе, попробуйте позже ", channel)
+				go self.saveViewersData(channel)
+				return
+			}
+		}
+	case strings.HasPrefix(message, "!Ada, show points"):
+		tempstr := strings.Fields(message)
+		if len(tempstr) < 4 {
+			self.say("Некорректный ввод", channel)
+		} else {
+				tempstr[3] = strings.TrimPrefix(tempstr[3], "@")
+				tempstr[3] = strings.ToLower(tempstr[3])
+				for _, viewer := range self.Viewers[channel].Viewers {
+					if viewer.Name == tempstr[3] {
+						go self.saveViewersData(channel)
+						self.say("Поинты "+viewer.Name+" "+strconv.Itoa(viewer.Points), channel)
+						return
+					}
+				}
+				self.say("Не нашла зрителя в базе, попробуйте позже ", channel)
+				go self.saveViewersData(channel)
+				return
+			}
 	}
 }
 

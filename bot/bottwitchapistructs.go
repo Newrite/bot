@@ -9,7 +9,7 @@ type chattersData struct {
 		Staff       []string `json:"staff"`
 		Admins      []string `json:"admins"`
 		Global_mods []string `json:"global_mods"`
-		Viewers     []string `json:"viewers"`
+		Viewers     []string `json:"Viewers"`
 	} `json:"chatters"`
 }
 

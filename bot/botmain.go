@@ -38,8 +38,8 @@ var react = map[string]string{
 	"привет":   "MrDestructoid 10000010 10010000 11000010 00100000 01000011 11101000 01100101 00001100",
 	"Hello":    "MrDestructoid 10000010 10010000 11000010 00100000 01000011 11101000 01100101 00001100",
 	"hello":    "MrDestructoid 10000010 10010000 11000010 00100000 01000011 11101000 01100101 00001100",
-	"SMOrc":	"SMOrc",
-	"+ в чат":	"+",
+	"SMOrc":    "SMOrc",
+	"+ в чат":  "+",
 }
 
 type TwitchBot struct {
@@ -54,6 +54,7 @@ type TwitchBot struct {
 	FileChannelLog map[string]*os.File
 	Settings       map[string]*botSettings
 	ApiConf        *apiConfig
+	Viewers        map[string]*viewersData
 }
 
 type botSettings struct {
@@ -72,4 +73,13 @@ type apiConfig struct {
 	Secret_id  string `json:"secret_id"`
 	Url        string
 	ChannelsID map[string]string
+}
+
+type viewersData struct {
+	Viewers []*viewer
+}
+
+type viewer struct {
+	Name string
+	Points int
 }

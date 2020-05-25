@@ -40,7 +40,7 @@ func (self *TwitchBot) initApiConfig() {
 	self.requestInitStreamersID()
 }
 
-func (self TwitchBot) requestInitStreamersID() {
+func (self *TwitchBot) requestInitStreamersID() {
 	var users usersData
 	self.ApiConf.Url = "https://api.twitch.tv/helix/users?login=" + self.Channels[0]
 	self.ApiConf.ChannelsID = make(map[string]string)
@@ -86,6 +86,9 @@ func (self *TwitchBot) handleApiRequest(username, channel, message, cmd string) 
 		} else {
 			return "false"
 		}
+	case "requestallviewers":
+		self.requestChatterData(channel, "", "initviewers")
+		return ""
 	default:
 		return "error"
 	}
@@ -109,11 +112,52 @@ func (self *TwitchBot) requestChatterData(channel, username, cmd string) string 
 				return "mod"
 			}
 		}
+	case "initviewers":
+		tempstr := make([]string, 0, 0)
+		for _, name := range chatters.Chatters.Viewers {
+			tempstr = append(tempstr, name)
+		}
+		for _, name := range chatters.Chatters.Moderators {
+			tempstr = append(tempstr, name)
+		}
+		for _, name := range chatters.Chatters.Global_mods {
+			tempstr = append(tempstr, name)
+		}
+		for _, name := range chatters.Chatters.Admins {
+			tempstr = append(tempstr, name)
+		}
+		for _, name := range chatters.Chatters.Vips {
+			tempstr = append(tempstr, name)
+		}
+		for _, name := range chatters.Chatters.Broadcaster {
+			tempstr = append(tempstr, name)
+		}
+		for _, name := range chatters.Chatters.Staff {
+			tempstr = append(tempstr, name)
+		}
+		for _, name := range tempstr {
+			if self.checkToAddViewer(name, channel) {
+				tempstruct := &viewer{
+					Name: name,
+					Points: 0,
+				}
+				self.Viewers[channel].Viewers = append(self.Viewers[channel].Viewers, tempstruct)
+			}
+		}
 	}
 	return "Nothing"
 }
 
-func (self TwitchBot) requestUsersData(channel, username, cmd string) string {
+func (self *TwitchBot) checkToAddViewer(name, channel string) bool {
+	for _, viewer := range self.Viewers[channel].Viewers {
+		if name == viewer.Name {
+			return false
+		}
+	}
+	return true
+	}
+
+func (self *TwitchBot) requestUsersData(channel, username, cmd string) string {
 	var users usersData
 	self.ApiConf.Url = "https://api.twitch.tv/helix/users?login=" + channel
 	body := self.templateRequest("GET", self.ApiConf.Url, self.ApiConf.Bearer)
@@ -130,14 +174,14 @@ func (self TwitchBot) requestUsersData(channel, username, cmd string) string {
 	}
 }
 
-func (self TwitchBot) requestBroadcasterSubscriptionsData(channel, username, cmd string) string {
+func (self *TwitchBot) requestBroadcasterSubscriptionsData(channel, username, cmd string) string {
 	var broadcasterSubscriptions broadcasterSubscriptionsData
 	self.ApiConf.Url = "https://api.twitch.tv/helix/subscriptions?broadcaster_id=" + self.ApiConf.ChannelsID[channel]
 	body := self.templateRequest("GET", self.ApiConf.Url, self.ApiConf.Bearer)
 	json.Unmarshal(body, &broadcasterSubscriptions)
 	switch cmd {
 	case "subus":
-		username = self.requestUsersData(channel, username, "DisNam")
+		username = self.requestUsersData(username, channel, "DisNam")
 		for _, name := range broadcasterSubscriptions.Subscriptions {
 			if name.User_name == username {
 				return "Саб"
