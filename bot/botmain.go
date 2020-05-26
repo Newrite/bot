@@ -25,10 +25,11 @@ var cmd = map[string]string{
 		" Реакции на всякое разное командой !Ada, switch react. " +
 		"Переключить отзыв на различные команды !Ada, switch cmd." +
 		" !Ada, set reactrate to <значение> выставляет настройку частоты реакции на различные сообщения в чате",
-	"!roll":    "_",
-	"!вырубай": "_",
-	"!eva":     "_",
-	"!билд":    "_",
+	"!roll":     "_",
+	"!вырубай":  "_",
+	"!eva":      "_",
+	"!билд":     "_",
+	"!вырубить": "_",
 }
 
 var react = map[string]string{
@@ -80,6 +81,8 @@ type viewersData struct {
 }
 
 type viewer struct {
-	Name string
+	Name   string
 	Points int
 }
+
+type respons map[bool]string

@@ -80,6 +80,23 @@ func (self *TwitchBot) handleApiRequest(username, channel, message, cmd string) 
 				return "unsub"
 			}
 		}
+	case "userstate":
+		if self.requestChatterData(channel, username, "mod") == "mod" {
+			return "mod"
+		}
+		if self.requestBroadcasterSubscriptionsData(channel, username, "subus") == "Саб" {
+			if self.requestChatterData(channel, username, "vip") == "vip" {
+				return "subvip"
+			} else {
+				return "sub"
+			}
+		} else {
+			if self.requestChatterData(channel, username, "vip") == "vip" {
+				return "vip"
+			} else {
+				return "unsub"
+			}
+		}
 	case "!evaismod":
 		if self.requestChatterData(channel, self.BotName, "mod") == "mod" {
 			return "true"
@@ -138,7 +155,7 @@ func (self *TwitchBot) requestChatterData(channel, username, cmd string) string 
 		for _, name := range tempstr {
 			if self.checkToAddViewer(name, channel) {
 				tempstruct := &viewer{
-					Name: name,
+					Name:   name,
 					Points: 0,
 				}
 				self.Viewers[channel].Viewers = append(self.Viewers[channel].Viewers, tempstruct)
@@ -155,7 +172,7 @@ func (self *TwitchBot) checkToAddViewer(name, channel string) bool {
 		}
 	}
 	return true
-	}
+}
 
 func (self *TwitchBot) requestUsersData(channel, username, cmd string) string {
 	var users usersData

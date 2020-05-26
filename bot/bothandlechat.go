@@ -59,7 +59,7 @@ func (self *TwitchBot) handleChat() error {
 					break
 				}
 				if strings.HasPrefix(message, key) && value == "_" {
-					go self.say(self.handleInteractiveCMD(key, channelName, userName), channelName)
+					go self.say(self.handleInteractiveCMD(key, channelName, userName, message), channelName)
 					break
 				}
 				if strings.HasPrefix(message, "!API") {
@@ -186,19 +186,19 @@ func (self *TwitchBot) handleMasterCmd(message, channel string) {
 		if len(tempstr) < 4 {
 			self.say("Некорректный ввод", channel)
 		} else {
-				tempstr[3] = strings.TrimPrefix(tempstr[3], "@")
-				tempstr[3] = strings.ToLower(tempstr[3])
-				for _, viewer := range self.Viewers[channel].Viewers {
-					if viewer.Name == tempstr[3] {
-						go self.saveViewersData(channel)
-						self.say("Поинты "+viewer.Name+" "+strconv.Itoa(viewer.Points), channel)
-						return
-					}
+			tempstr[3] = strings.TrimPrefix(tempstr[3], "@")
+			tempstr[3] = strings.ToLower(tempstr[3])
+			for _, viewer := range self.Viewers[channel].Viewers {
+				if viewer.Name == tempstr[3] {
+					go self.saveViewersData(channel)
+					self.say("Поинты "+viewer.Name+" "+strconv.Itoa(viewer.Points), channel)
+					return
 				}
-				self.say("Не нашла зрителя в базе, попробуйте позже ", channel)
-				go self.saveViewersData(channel)
-				return
 			}
+			self.say("Не нашла зрителя в базе, попробуйте позже ", channel)
+			go self.saveViewersData(channel)
+			return
+		}
 	}
 }
 
@@ -208,7 +208,7 @@ func (self *TwitchBot) handleAPIcmd(message, channel, username string) string {
 	return ""
 }
 
-func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username string) string {
+func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username, message string) string {
 	switch cmd {
 	case "!roll":
 		return "@" + username + " " + strconv.Itoa(rand.Intn(21))
@@ -224,6 +224,188 @@ func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username string) strin
 		} else if channel == "reflyq" && username == "ifozar" {
 			self.say("iFozar заебал уже эту хуйню писать", channel)
 			return "/timeout ifozar 300"
+		}
+		return ""
+	case "!вырубить":
+		if channel == "reflyq" {
+			tempstrslice := strings.Fields(message)
+			if len(tempstrslice) < 2 {
+				return ""
+			}
+			tempstrslice[1] = strings.TrimPrefix(tempstrslice[1], "@")
+			tempstrslice[1] = strings.ToLower(tempstrslice[1])
+			if tempstrslice[1] == channel {
+				return "У стримера бесплотность с капом отката на крики roflanEbalo"
+			}
+			userOffensive := self.handleApiRequest(username, channel, message, "userstate")
+			userDeffensive := self.handleApiRequest(tempstrslice[1], channel, message, "userstate")
+			switch userOffensive {
+			case "mod":
+				switch userDeffensive {
+				case "mod":
+					if rand.Intn(99)+1 >= 50 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "sub":
+					if rand.Intn(99)+1 >= 15 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "subvip":
+					if rand.Intn(99)+1 >= 25 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "unsub":
+					if rand.Intn(99)+1 >= 5 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "vip":
+					if rand.Intn(99)+1 >= 10 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				}
+			case "sub":
+				switch userDeffensive {
+				case "mod":
+					if rand.Intn(99)+1 >= 85 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "sub":
+					if rand.Intn(99)+1 >= 50 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "subvip":
+					if rand.Intn(99)+1 >= 66 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "unsub":
+					if rand.Intn(99)+1 >= 25 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "vip":
+					if rand.Intn(99)+1 >= 33 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				}
+			case "subvip":
+				switch userDeffensive {
+				case "mod":
+					if rand.Intn(99)+1 >= 75 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "sub":
+					if rand.Intn(99)+1 >= 33 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "subvip":
+					if rand.Intn(99)+1 >= 50 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "unsub":
+					if rand.Intn(99)+1 >= 15 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "vip":
+					if rand.Intn(99)+1 >= 25 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				}
+			case "unsub":
+				switch userDeffensive {
+				case "mod":
+					if rand.Intn(99)+1 >= 95 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "sub":
+					if rand.Intn(99)+1 >= 75 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "subvip":
+					if rand.Intn(99)+1 >= 85 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "unsub":
+					if rand.Intn(99)+1 >= 50 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "vip":
+					if rand.Intn(99)+1 >= 66 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				}
+			case "vip":
+				switch userDeffensive {
+				case "mod":
+					if rand.Intn(99)+1 >= 90 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "sub":
+					if rand.Intn(99)+1 >= 66 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "subvip":
+					if rand.Intn(99)+1 >= 75 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "unsub":
+					if rand.Intn(99)+1 >= 33 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				case "vip":
+					if rand.Intn(99)+1 >= 50 {
+						return self.response(username, tempstrslice[1], channel, true)
+					} else {
+						return self.response(username, tempstrslice[1], channel, false)
+					}
+				}
+			}
 		}
 		return ""
 	case "!eva":
@@ -281,6 +463,65 @@ func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username string) strin
 		}
 	default:
 		return "none"
+	}
+}
+
+func (self *TwitchBot) response(offUser, deffUser, channel string, victory bool) string {
+	if victory {
+		switch rand.Intn(6) {
+		case 0:
+			self.say("/timeout @"+deffUser+" 120", channel)
+			return offUser + " запускает фаербол в ничего не подозревающего " + deffUser + " и он сгорает дотла.."
+		case 1:
+			self.say("/timeout @"+deffUser+" 120", channel)
+			return offUser + " подчиняет волю " + deffUser + " с помощью иллюзии, теперь он может делать с ним," +
+				" что хочет gachiBASS"
+		case 2:
+			self.say("/timeout @"+offUser+" 120", channel)
+			self.say("/timeout @"+deffUser+" 120", channel)
+			return offUser + " с разбега совершает сокрушительный удар по черепушке " + deffUser + ", кто же знал," +
+				" что " + deffUser + " решит надеть колечко малого отражения roflanEbalo"
+		case 3:
+			self.say("/timeout @"+deffUser+" 120", channel)
+			return offUser + " подкравшись к " + deffUser + " перерезает его горло, всё было тихо, ни шума ни крика.."
+		case 4:
+			self.say("/timeout @"+deffUser+" 120", channel)
+			return offUser + " подкидывает яд в карманы " + deffUser + ", страшная смерть.."
+		case 5:
+			self.say("/timeout @"+deffUser+" 120", channel)
+			return offUser + " взламывает жопу " + deffUser + ", теперь он в его полном распоряжении gachiHYPER"
+		default:
+			return ""
+		}
+	} else {
+		switch rand.Intn(7) {
+		case 0:
+			return offUser + " мастерским выстрелом поражает голову " + deffUser + ", стрела проходит на вылет," +
+				" жизненноважные органы не задеты roflanEbalo"
+		case 1:
+			return offUser + " пытается поразить " + deffUser + " молнией, но кап абсорба говорит - НЕТ! EZ"
+		case 2:
+			self.say("/timeout @"+offUser+" 120", channel)
+			return offUser + " запускает фаербол в  " + deffUser + ", но он успевает защититься зеркалом Шалидора" +
+				" и вы погибаете.."
+		case 3:
+			return offUser + " стреляет из лука в " + deffUser + ", 1ое попадание, 2ое, 3ье, 10ое.. но " + deffUser + "" +
+				" всё еще жив, а хули ты хотел от луков? roflanEbalo"
+		case 4:
+			self.say("/timeout @"+offUser+" 120", channel)
+			return offUser + " завидев " + deffUser + " хорошенько разбегается, чтобы нанести удар и вдруг.. падает" +
+				" без сил так и не добежав до " + deffUser + ", а вот нехуй альтмером в тяже играть roflanEbalo"
+		case 5:
+			self.say("/timeout @"+offUser+" 120", channel)
+			self.say("/timeout @"+deffUser+" 120", channel)
+			return offUser + " подкрадывается к " + deffUser + ", но вдруг из ниоткуда появившийся медведь" +
+				" убивает их обоих roflanEbalo"
+		case 6:
+			self.say("/timeout @"+offUser+" 120", channel)
+			return offUser + " пытается подкрасться к " + deffUser + ", но вдруг - вас заметили roflanEbalo"
+		default:
+			return ""
+		}
 	}
 }
 

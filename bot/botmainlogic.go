@@ -15,12 +15,12 @@ import (
 func (self *TwitchBot) initBot() {
 	botFile, err := ioutil.ReadFile("BotData.json")
 	if err != nil {
-		fmt.Print("Ошибка чтения данных бота (BotData.Json),"+
+		fmt.Println("Ошибка чтения данных бота (BotData.Json),"+
 			" должно находиться в корневой папке с исполняемым файлом: ", err)
 	}
 	err = json.Unmarshal(botFile, self)
 	if err != nil {
-		fmt.Print("Ошибка конвертирования структуры из файла в структуру бота: ", err)
+		fmt.Println("Ошибка конвертирования структуры из файла в структуру бота: ", err)
 	}
 }
 
@@ -43,11 +43,11 @@ func (self *TwitchBot) initSettings() {
 				channelSettingsJsonFile, _ = ioutil.ReadFile(
 					"logs/" + channel + " Channel/" + channel + " Settings.json")
 			}
-			fmt.Print("Ошибка чтения данных настроек канала: ", err)
+			fmt.Println("Ошибка чтения данных настроек канала: ", err)
 		}
 		err = json.Unmarshal(channelSettingsJsonFile, self.Settings[channel])
 		if err != nil {
-			fmt.Print("Ошибка конвертирования структуры из файла в структуру настроек: ", err)
+			fmt.Println("Ошибка конвертирования структуры из файла в структуру настроек: ", err)
 		}
 		if self.handleApiRequest("", channel, "", "!evaismod") == "true" {
 			self.Settings[channel].IsModerator = true
@@ -76,7 +76,6 @@ func (self *TwitchBot) saveSettings(channel string) {
 	}
 }
 
-
 func (self *TwitchBot) initViewersData() {
 	self.Viewers = make(map[string]*viewersData)
 	for _, channel := range self.Channels {
@@ -89,11 +88,11 @@ func (self *TwitchBot) initViewersData() {
 				channelViwerFileJson, _ = ioutil.ReadFile(
 					"logs/" + channel + " Channel/" + channel + " ViewersData.json")
 			}
-			fmt.Print("Ошибка чтения данных зрителей канала: ", err)
+			fmt.Println("Ошибка чтения данных зрителей канала: ", err)
 		}
 		err = json.Unmarshal(channelViwerFileJson, &self.Viewers[channel].Viewers)
 		if err != nil {
-			fmt.Print("Ошибка конвертирования структуры из файла в структуру зрителей: ", err)
+			fmt.Println("Ошибка конвертирования структуры из файла в структуру зрителей: ", err)
 		}
 		self.saveViewersData(channel)
 	}
@@ -191,14 +190,14 @@ func (self *TwitchBot) joinChannels() error {
 	_, err = self.Connection.Write([]byte("PASS " + self.OAuth + "\r\n"))
 	_, err = self.Connection.Write([]byte("NICK " + self.BotName + "\r\n"))
 	if err != nil {
-		fmt.Print("Ошибка во время отправки логина: ", err)
+		fmt.Println("Ошибка во время отправки логина: ", err)
 		time.Sleep(10 * time.Second)
 		return err
 	}
 	for _, channel := range self.Channels {
 		_, err := self.Connection.Write([]byte("JOIN #" + channel + "\r\n"))
 		if err != nil {
-			fmt.Print("Ошибка во время входа в чат-комнату: ", err)
+			fmt.Println("Ошибка во время входа в чат-комнату: ", err)
 			return err
 		}
 	}
@@ -230,5 +229,5 @@ func (self *TwitchBot) say(msg, channel string) {
 	}
 	self.FileChannelLog[channel].WriteString("[" + timeStamp() + "] Канал:" + channel +
 		" Ник:" + self.BotName + "\tСообщение:" + msg + "\n")
-	fmt.Print("[" + timeStamp() + "] Канал:" + channel + "\tНик:" + self.BotName + "\tСообщение:" + msg + "\n")
+	fmt.Println("[" + timeStamp() + "] Канал:" + channel + "\tНик:" + self.BotName + "\tСообщение:" + msg + "\n")
 }
