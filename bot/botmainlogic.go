@@ -152,9 +152,9 @@ func (self *TwitchBot) evalute() {
 func (self *TwitchBot) Start() {
 	var err error
 	self.initBot()
-	self.initApiConfig()
+	go self.initApiConfig()
 	go self.evalute()
-	self.initViewersData()
+	go self.initViewersData()
 	for {
 		self.connect()
 		err = self.joinChannels()
@@ -211,6 +211,7 @@ func (self *TwitchBot) listenChannels() error {
 	for _, channelFile := range self.FileChannelLog {
 		defer channelFile.Close()
 	}
+	go self.sendBlindRepeatMessage()
 	for {
 		if err = self.handleChat(); err != nil {
 			return err
@@ -225,7 +226,7 @@ func (self *TwitchBot) say(msg, channel string) {
 	}
 	_, err := self.Connection.Write([]byte("PRIVMSG #" + channel + " :" + msg + "\r\n"))
 	if err != nil {
-		fmt.Println("Ошибка отрпавки сообщения: ", err)
+		fmt.Println("Ошибка отправки сообщения: ", err)
 	}
 	self.FileChannelLog[channel].WriteString("[" + timeStamp() + "] Канал:" + channel +
 		" Ник:" + self.BotName + "\tСообщение:" + msg + "\n")

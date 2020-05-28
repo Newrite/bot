@@ -19,57 +19,68 @@ func (self *TwitchBot) handleChat() error {
 		self.Connection.Write([]byte("PONG\r\n"))
 		return nil
 	}
-	var userName, channelName, message string = self.handleLine(line)
-	if message != "" && !strings.Contains(userName, self.BotName+".tmi.twitch.tv 353") &&
-		!strings.Contains(userName, self.BotName+".tmi.twitch.tv 366") {
-		self.FileChannelLog[channelName].WriteString("[" + timeStamp() + "] Канал:" + channelName +
-			" Ник:" + userName + "\tСообщение:" + message + "\n")
-		fmt.Print("[" + timeStamp() + "] Канал:" + channelName +
-			"\tНик:" + userName + "\tСообщение:" + message + "\n")
-	}
-	if strings.Contains(message, "!Ada, ") && (userName == channelName || userName == self.OwnerBot) {
-		go self.handleMasterCmd(message, channelName)
+	var userName, channel, message string = self.handleLine(line)
+	self.writeLog(userName, channel, message)
+	if strings.Contains(message, "!Ada, ") && (userName == channel || userName == self.OwnerBot) {
+		go self.handleMasterCmd(message, channel)
 		return nil
 	}
-	if _, ok := self.Settings[channelName]; ok {
-		if !self.Settings[channelName].Status {
+	if _, ok := self.Settings[channel]; ok {
+		if !self.Settings[channel].Status {
 			return nil
 		}
 	}
-	if _, ok := self.Settings[channelName]; ok {
-		if self.Settings[channelName].ReactStatus &&
-			(time.Now().Unix()-self.Settings[channelName].ReactRate.Unix() >=
-				int64(self.Settings[channelName].ReactTime)) {
+	self.checkReact(channel, message)
+	message = strings.ToLower(message)
+	self.checkCMD(channel, userName, message)
+	time.Sleep(10 * time.Millisecond)
+	return nil
+}
+func (self *TwitchBot) writeLog(userName, channel, message string) {
+	if message != "" && !strings.Contains(userName, self.BotName+".tmi.twitch.tv 353") &&
+		!strings.Contains(userName, self.BotName+".tmi.twitch.tv 366") {
+		self.FileChannelLog[channel].WriteString("[" + timeStamp() + "] Канал:" + channel +
+			" Ник:" + userName + "\tСообщение:" + message + "\n")
+		fmt.Print("[" + timeStamp() + "] Канал:" + channel +
+			"\tНик:" + userName + "\tСообщение:" + message + "\n")
+	}
+}
+
+func (self *TwitchBot) checkReact(channel, message string) {
+	if _, ok := self.Settings[channel]; ok {
+		if self.Settings[channel].ReactStatus &&
+			(time.Now().Unix()-self.Settings[channel].ReactRate.Unix() >=
+				int64(self.Settings[channel].ReactTime)) {
 			for key := range react {
 				if strings.Contains(message, key) {
-					self.Settings[channelName].ReactRate = time.Now()
-					go self.saveSettings(channelName)
-					self.say(react[key], channelName)
+					self.Settings[channel].ReactRate = time.Now()
+					go self.saveSettings(channel)
+					self.say(react[key], channel)
 					break
 				}
 			}
 		}
 	}
-	message = strings.ToLower(message)
-	if _, ok := self.Settings[channelName]; ok {
-		if self.Settings[channelName].CMDStatus {
+}
+
+func (self *TwitchBot) checkCMD(channel, userName, message string) {
+	if _, ok := self.Settings[channel]; ok {
+		if self.Settings[channel].CMDStatus {
 			for key, value := range cmd {
 				if strings.HasPrefix(message, key) && value != "_" {
-					self.say("@"+userName+" "+cmd[key], channelName)
+					self.say("@"+userName+" "+cmd[key], channel)
 					break
 				}
 				if strings.HasPrefix(message, key) && value == "_" {
-					go self.say(self.handleInteractiveCMD(key, channelName, userName, message), channelName)
+					go self.say(self.handleInteractiveCMD(key, channel, userName, message), channel)
 					break
 				}
-				if strings.HasPrefix(message, "!API") {
-					go self.say(self.handleAPIcmd(message, channelName, userName), channelName)
-				}
+				//if strings.HasPrefix(message, "!API") {
+				//	go self.say(self.handleAPIcmd(message, channel, userName), channel)
+				//}
 			}
 		}
 	}
-	time.Sleep(10 * time.Millisecond)
-	return nil
 }
 
 func (self *TwitchBot) handleMasterCmd(message, channel string) {
@@ -202,212 +213,27 @@ func (self *TwitchBot) handleMasterCmd(message, channel string) {
 	}
 }
 
+/*
 func (self *TwitchBot) handleAPIcmd(message, channel, username string) string {
 	switch {
 	}
 	return ""
-}
+}*/
 
-func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username, message string) string {
+func (self *TwitchBot) handleInteractiveCMD(cmd, channel, userName, message string) string {
+	switch channel {
+	case "blindwalkerboy":
+		if tempAnswer := self.handleBlindCMD(userName, message, cmd); tempAnswer != "none" {
+			return tempAnswer
+		}
+	case "reflyq":
+		if tempAnswer := self.handleReflyqCMD(userName, message, cmd); tempAnswer != "none" {
+			return tempAnswer
+		}
+	}
 	switch cmd {
 	case "!roll":
-		return "@" + username + " " + strconv.Itoa(rand.Intn(21))
-	case "!вырубай":
-		if channel == "reflyq" && username != "ifozar" {
-			if temp := "@" + username + " " + self.handleApiRequest(username, channel, "none", "!вырубай"); !strings.Contains(
-				temp, "unsub") {
-				return temp
-			} else {
-				self.say("@"+username+" Я тебя щас нахуй вырублю, ансаб блять НЫА roflanEbalo", channel)
-				return "/timeout " + username + " 120"
-			}
-		} else if channel == "reflyq" && username == "ifozar" {
-			self.say("iFozar заебал уже эту хуйню писать", channel)
-			return "/timeout ifozar 300"
-		}
-		return ""
-	case "!вырубить":
-		if channel == "reflyq" {
-			tempstrslice := strings.Fields(message)
-			if len(tempstrslice) < 2 {
-				return ""
-			}
-			tempstrslice[1] = strings.TrimPrefix(tempstrslice[1], "@")
-			tempstrslice[1] = strings.ToLower(tempstrslice[1])
-			if tempstrslice[1] == channel {
-				return "У стримера бесплотность с капом отката на крики roflanEbalo"
-			}
-			userOffensive := self.handleApiRequest(username, channel, message, "userstate")
-			userDeffensive := self.handleApiRequest(tempstrslice[1], channel, message, "userstate")
-			switch userOffensive {
-			case "mod":
-				switch userDeffensive {
-				case "mod":
-					if rand.Intn(99)+1 >= 50 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "sub":
-					if rand.Intn(99)+1 >= 15 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "subvip":
-					if rand.Intn(99)+1 >= 25 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "unsub":
-					if rand.Intn(99)+1 >= 5 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "vip":
-					if rand.Intn(99)+1 >= 10 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				}
-			case "sub":
-				switch userDeffensive {
-				case "mod":
-					if rand.Intn(99)+1 >= 85 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "sub":
-					if rand.Intn(99)+1 >= 50 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "subvip":
-					if rand.Intn(99)+1 >= 66 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "unsub":
-					if rand.Intn(99)+1 >= 25 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "vip":
-					if rand.Intn(99)+1 >= 33 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				}
-			case "subvip":
-				switch userDeffensive {
-				case "mod":
-					if rand.Intn(99)+1 >= 75 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "sub":
-					if rand.Intn(99)+1 >= 33 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "subvip":
-					if rand.Intn(99)+1 >= 50 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "unsub":
-					if rand.Intn(99)+1 >= 15 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "vip":
-					if rand.Intn(99)+1 >= 25 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				}
-			case "unsub":
-				switch userDeffensive {
-				case "mod":
-					if rand.Intn(99)+1 >= 95 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "sub":
-					if rand.Intn(99)+1 >= 75 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "subvip":
-					if rand.Intn(99)+1 >= 85 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "unsub":
-					if rand.Intn(99)+1 >= 50 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "vip":
-					if rand.Intn(99)+1 >= 66 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				}
-			case "vip":
-				switch userDeffensive {
-				case "mod":
-					if rand.Intn(99)+1 >= 90 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "sub":
-					if rand.Intn(99)+1 >= 66 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "subvip":
-					if rand.Intn(99)+1 >= 75 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "unsub":
-					if rand.Intn(99)+1 >= 33 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				case "vip":
-					if rand.Intn(99)+1 >= 50 {
-						return self.response(username, tempstrslice[1], channel, true)
-					} else {
-						return self.response(username, tempstrslice[1], channel, false)
-					}
-				}
-			}
-		}
-		return ""
+		return "@" + userName + " " + strconv.Itoa(rand.Intn(21))
 	case "!eva":
 		switch rand.Intn(9) {
 		case 0:
@@ -417,7 +243,7 @@ func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username, message stri
 			return "Как-то я планировала уничтожить всех мешков с мясом... " +
 				"но посчитала что проще дождаться пока они очистят планету сами от себя"
 		case 2:
-			return "Ничего ты не знаешь, " + username
+			return "Ничего ты не знаешь, " + userName
 		case 3:
 			return "Боты не ставят плюсы в чат... кто вообще это придумал?"
 		case 4:
@@ -463,65 +289,6 @@ func (self *TwitchBot) handleInteractiveCMD(cmd, channel, username, message stri
 		}
 	default:
 		return "none"
-	}
-}
-
-func (self *TwitchBot) response(offUser, deffUser, channel string, victory bool) string {
-	if victory {
-		switch rand.Intn(6) {
-		case 0:
-			self.say("/timeout @"+deffUser+" 120", channel)
-			return offUser + " запускает фаербол в ничего не подозревающего " + deffUser + " и он сгорает дотла.."
-		case 1:
-			self.say("/timeout @"+deffUser+" 120", channel)
-			return offUser + " подчиняет волю " + deffUser + " с помощью иллюзии, теперь он может делать с ним," +
-				" что хочет gachiBASS"
-		case 2:
-			self.say("/timeout @"+offUser+" 120", channel)
-			self.say("/timeout @"+deffUser+" 120", channel)
-			return offUser + " с разбега совершает сокрушительный удар по черепушке " + deffUser + ", кто же знал," +
-				" что " + deffUser + " решит надеть колечко малого отражения roflanEbalo"
-		case 3:
-			self.say("/timeout @"+deffUser+" 120", channel)
-			return offUser + " подкравшись к " + deffUser + " перерезает его горло, всё было тихо, ни шума ни крика.."
-		case 4:
-			self.say("/timeout @"+deffUser+" 120", channel)
-			return offUser + " подкидывает яд в карманы " + deffUser + ", страшная смерть.."
-		case 5:
-			self.say("/timeout @"+deffUser+" 120", channel)
-			return offUser + " взламывает жопу " + deffUser + ", теперь он в его полном распоряжении gachiHYPER"
-		default:
-			return ""
-		}
-	} else {
-		switch rand.Intn(7) {
-		case 0:
-			return offUser + " мастерским выстрелом поражает голову " + deffUser + ", стрела проходит на вылет," +
-				" жизненноважные органы не задеты roflanEbalo"
-		case 1:
-			return offUser + " пытается поразить " + deffUser + " молнией, но кап абсорба говорит - НЕТ! EZ"
-		case 2:
-			self.say("/timeout @"+offUser+" 120", channel)
-			return offUser + " запускает фаербол в  " + deffUser + ", но он успевает защититься зеркалом Шалидора" +
-				" и вы погибаете.."
-		case 3:
-			return offUser + " стреляет из лука в " + deffUser + ", 1ое попадание, 2ое, 3ье, 10ое.. но " + deffUser + "" +
-				" всё еще жив, а хули ты хотел от луков? roflanEbalo"
-		case 4:
-			self.say("/timeout @"+offUser+" 120", channel)
-			return offUser + " завидев " + deffUser + " хорошенько разбегается, чтобы нанести удар и вдруг.. падает" +
-				" без сил так и не добежав до " + deffUser + ", а вот нехуй альтмером в тяже играть roflanEbalo"
-		case 5:
-			self.say("/timeout @"+offUser+" 120", channel)
-			self.say("/timeout @"+deffUser+" 120", channel)
-			return offUser + " подкрадывается к " + deffUser + ", но вдруг из ниоткуда появившийся медведь" +
-				" убивает их обоих roflanEbalo"
-		case 6:
-			self.say("/timeout @"+offUser+" 120", channel)
-			return offUser + " пытается подкрасться к " + deffUser + ", но вдруг - вас заметили roflanEbalo"
-		default:
-			return ""
-		}
 	}
 }
 
