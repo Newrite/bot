@@ -1,0 +1,11 @@
+{
+	"bot_name": "adaiseva",
+    "token": "3e7c39ab44896c810c5e75dba2a808bb",
+	"bot_id": "1351899",
+	"server": "wss://chat.goodgame.ru/chat/websocket",
+	"origin": "https://chat.goodgame.ru/chat/",
+	"owner_bot": "newr1te",
+	"channels": [
+    "40756"
+    ]
+}

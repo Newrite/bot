@@ -1,4 +1,4 @@
-package bot
+package twitch
 
 import (
 	//"github.com/sirupsen/logrus"

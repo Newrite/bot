@@ -1,13 +1,16 @@
 package main
 
 import (
-	"bot/bot"
+	"bot/twitch"
+	"bot/goodgame"
 	"math/rand"
 	"time"
 )
 
 func main() {
-	var twitchBot bot.TwitchBot
+	var twitchBot twitch.TwitchBot
+	var goodGameBot goodgame.GoodGameBot
 	rand.Seed(time.Now().Unix())
+	go goodGameBot.Start()
 	twitchBot.Start()
 }
