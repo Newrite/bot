@@ -42,3 +42,22 @@ type broadcasterSubscriptionsData struct {
 		Cursor string `json:"cursor"`
 	} `json:"pagination"`
 }
+
+type streamData struct {
+	Data []struct {
+		Id            string   `json:"id"`
+		User_id       string   `json:"user_id"`
+		User_name     string   `json:"user_name"`
+		Game_id       string   `json:"game_id"`
+		Type          string   `json:"type"`
+		Title         string   `json:"title"`
+		Viewer_count  int      `json:"viewer_count"`
+		Started_at    string   `json:"started_at"`
+		Language      string   `json:"language"`
+		Thumbnail_url string   `json:"thumbnail_url"`
+		Tag_ids       []string `json:"tag_ids"`
+	} `json:"data"`
+	Pagination struct {
+		Cursor string `json:"cursor"`
+	} `json:"pagination"`
+}

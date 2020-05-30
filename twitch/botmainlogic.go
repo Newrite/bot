@@ -212,6 +212,7 @@ func (self *TwitchBot) listenChannels() error {
 		defer channelFile.Close()
 	}
 	go self.sendBlindRepeatMessage()
+	//go self.startPubSub()
 	for {
 		if err = self.handleChat(); err != nil {
 			return err

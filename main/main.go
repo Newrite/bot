@@ -1,8 +1,8 @@
 package main
 
 import (
-	"bot/twitch"
 	"bot/goodgame"
+	"bot/twitch"
 	"math/rand"
 	"time"
 )

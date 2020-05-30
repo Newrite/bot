@@ -1,13 +1,17 @@
 package twitch
 
-import "time"
+import (
+	"time"
+)
 
 var channelBlinde string = "blindwalkerboy"
 
 func (self *TwitchBot) sendBlindRepeatMessage() {
 	for {
-		self.say("Привет, дружище! Приглашаю тебя в лучшее сообщество по Requiem"+
-			" и ламповое убежище для настоящих мужчин - https://discord.gg/4yqdafW", channelBlinde)
+		if self.handleApiRequest("", channelBlinde, "", "streamStatus") == "online" {
+			self.say("Привет, дружище! Приглашаю тебя в лучшее сообщество по Requiem"+
+				" и ламповое убежище для настоящих мужчин - https://discord.gg/4yqdafW", channelBlinde)
+		}
 		time.Sleep(15 * time.Minute)
 	}
 }

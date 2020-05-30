@@ -5,24 +5,26 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
+	"time"
 )
 
 func (self *TwitchBot) templateRequest(method, url, headAuth string) []byte {
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, nil)
 	req.Header.Set("Accept", "application/vnd.twitchtv.v5+json")
-	req.Header.Set("Authorization", headAuth)
+	req.Header.Add("Authorization", headAuth)
 	req.Header.Add("Client-ID", self.ApiConf.Client_id)
 	if err != nil {
-		panic(err.Error())
+		fmt.Println(err)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err.Error())
+		fmt.Println(err)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err.Error())
+		fmt.Println(err)
 	}
 	return body
 }
@@ -106,6 +108,10 @@ func (self *TwitchBot) handleApiRequest(username, channel, message, cmd string) 
 	case "requestallviewers":
 		self.requestChatterData(channel, "", "initviewers")
 		return ""
+	case "streamStatus":
+		return self.requestStreamData(channel, username, cmd)
+	case "uptime":
+		return self.requestStreamData(channel, username, cmd)
 	default:
 		return "error"
 	}
@@ -207,5 +213,27 @@ func (self *TwitchBot) requestBroadcasterSubscriptionsData(channel, username, cm
 		return "Не саб"
 	default:
 		return "Nothing"
+	}
+}
+
+func (self *TwitchBot) requestStreamData(channel, username, cmd string) string {
+	var stream streamData
+	self.ApiConf.Url = "https://api.twitch.tv/helix/streams?user_login=" + channel
+	body := self.templateRequest("GET", self.ApiConf.Url, self.ApiConf.Bearer)
+	json.Unmarshal(body, &stream)
+	if len(stream.Data) < 1 {
+		return "offline"
+	}
+	switch cmd {
+	case "streamStatus":
+		return "online"
+	case "uptime":
+		twitchParser, _ := time.Parse(time.RFC3339, stream.Data[0].Started_at)
+		tempstr := strings.Replace(time.Since(twitchParser).Truncate(time.Second).String(), "h", "ч", -1)
+		tempstr = strings.Replace(tempstr, "m", "м", -1)
+		tempstr = strings.Replace(tempstr, "s", "с", -1)
+		return " " + tempstr
+	default:
+		return ""
 	}
 }
