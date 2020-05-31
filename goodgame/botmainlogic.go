@@ -8,48 +8,48 @@ import (
 	"time"
 )
 
-func (self *GoodGameBot) readServer() string {
+func (bgg *BotGoodGame) readServer() string {
 	var err error
-	if self.n, err = self.Connection.Read(self.serverResponse); err != nil {
+	if bgg.n, err = bgg.Connection.Read(bgg.serverResponse); err != nil {
 		fmt.Println(err)
 	}
-	return fmt.Sprintf(string(self.serverResponse[:self.n]))
+	return fmt.Sprintf(string(bgg.serverResponse[:bgg.n]))
 }
 
-func (self *GoodGameBot) initBot() {
+func (bgg *BotGoodGame) initBot() {
 	botFile, err := ioutil.ReadFile("GGBotData.json")
 	if err != nil {
 		fmt.Println("Ошибка чтения данных бота (GGBotData.Json),"+
 			" должно находиться в корневой папке с исполняемым файлом: ", err)
 	}
-	err = json.Unmarshal(botFile, self)
+	err = json.Unmarshal(botFile, bgg)
 	if err != nil {
 		fmt.Println("Ошибка конвертирования структуры из файла в структуру бота: ", err)
 	}
 }
 
-func (self *GoodGameBot) connect() {
+func (bgg *BotGoodGame) connect() {
 	var err error
-	self.Connection, err = websocket.Dial(self.Server, "", self.Origin)
+	bgg.Connection, err = websocket.Dial(bgg.Server, "", bgg.Origin)
 	if err != nil {
 		fmt.Println("Ошибка попытки соединения: ", err)
 		time.Sleep(10 * time.Second)
-		self.connect()
+		bgg.connect()
 	}
-	fmt.Println(self.readServer())
-	_, err = self.Connection.Write([]byte(`{"type":"auth","data":{"user_id":"` + self.BotId + `","token":"` + self.Token + `"}}`))
+	fmt.Println(bgg.readServer())
+	_, err = bgg.Connection.Write([]byte(`{"type":"auth","data":{"user_id":"` + bgg.BotId + `","token":"` + bgg.Token + `"}}`))
 	if err != nil {
 		fmt.Println("Ошибка во время отправки логина: ", err)
 		time.Sleep(10 * time.Second)
 	}
-	fmt.Println(self.readServer())
+	fmt.Println(bgg.readServer())
 }
 
-func (self *GoodGameBot) joinChannels() error {
+func (bgg *BotGoodGame) joinChannels() error {
 	var err error
-	for _, channel := range self.Channels {
-		_, err = self.Connection.Write([]byte(`{"type":"join","data":{"channel_id":"` + channel + `","hidden":false}}`))
-		fmt.Println(self.readServer())
+	for _, channel := range bgg.Channels {
+		_, err = bgg.Connection.Write([]byte(`{"type":"join","data":{"channel_id":"` + channel + `","hidden":false}}`))
+		fmt.Println(bgg.readServer())
 		if err != nil {
 			fmt.Println("Ошибка во время входа в чат-комнату: ", err)
 			return err
@@ -58,18 +58,18 @@ func (self *GoodGameBot) joinChannels() error {
 	return nil
 }
 
-func (self *GoodGameBot) Start() {
+func (bgg *BotGoodGame) Start() {
 	var err error
-	self.initBot()
-	self.serverResponse = make([]byte, 1024)
+	bgg.initBot()
+	bgg.serverResponse = make([]byte, 1024)
 	for {
-		self.connect()
-		err = self.joinChannels()
+		bgg.connect()
+		err = bgg.joinChannels()
 		if err != nil {
 			err = nil
 			continue
 		}
-		err = self.listenChannels()
+		err = bgg.listenChannels()
 		if err != nil {
 			err = nil
 			time.Sleep(10 * time.Second)
@@ -78,22 +78,22 @@ func (self *GoodGameBot) Start() {
 			break
 		}
 	}
-	defer self.Connection.Close()
+	defer bgg.Connection.Close()
 }
 
-func (self *GoodGameBot) listenChannels() error {
+func (bgg *BotGoodGame) listenChannels() error {
 	var err error
 	for {
-		if err = self.handleChat(); err != nil {
+		if err = bgg.handleChat(); err != nil {
 			return err
 		}
 	}
 }
 
-func (self *GoodGameBot) say(msg, channel string) {
+func (bgg *BotGoodGame) say(msg, channel string) {
 	if msg == "" {
 		fmt.Println("Сообщение пустое")
 	}
-	self.Connection.Write([]byte(`{"type":"send_message","data":{"channel_id":"` + channel + `","text":"` + msg + `","hideIcon":false,"mobile":false}}`))
-	fmt.Println(self.readServer())
+	bgg.Connection.Write([]byte(`{"type":"send_message","data":{"channel_id":"` + channel + `","text":"` + msg + `","hideIcon":false,"mobile":false}}`))
+	fmt.Println(bgg.readServer())
 }

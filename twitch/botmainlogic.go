@@ -12,22 +12,22 @@ import (
 	"time"
 )
 
-func (self *TwitchBot) initBot() {
+func (bt *BotTwitch) initBot() {
 	botFile, err := ioutil.ReadFile("BotData.json")
 	if err != nil {
 		fmt.Println("Ошибка чтения данных бота (BotData.Json),"+
 			" должно находиться в корневой папке с исполняемым файлом: ", err)
 	}
-	err = json.Unmarshal(botFile, self)
+	err = json.Unmarshal(botFile, bt)
 	if err != nil {
 		fmt.Println("Ошибка конвертирования структуры из файла в структуру бота: ", err)
 	}
 }
 
-func (self *TwitchBot) initSettings() {
-	self.Settings = make(map[string]*botSettings)
-	for _, channel := range self.Channels {
-		self.Settings[channel] = &botSettings{
+func (bt *BotTwitch) initSettings() {
+	bt.Settings = make(map[string]*botSettings)
+	for _, channel := range bt.Channels {
+		bt.Settings[channel] = &botSettings{
 			Status:      true,
 			ReactStatus: true,
 			CMDStatus:   true,
@@ -45,21 +45,21 @@ func (self *TwitchBot) initSettings() {
 			}
 			fmt.Println("Ошибка чтения данных настроек канала: ", err)
 		}
-		err = json.Unmarshal(channelSettingsJsonFile, self.Settings[channel])
+		err = json.Unmarshal(channelSettingsJsonFile, bt.Settings[channel])
 		if err != nil {
 			fmt.Println("Ошибка конвертирования структуры из файла в структуру настроек: ", err)
 		}
-		if self.handleApiRequest("", channel, "", "!evaismod") == "true" {
-			self.Settings[channel].IsModerator = true
+		if bt.handleApiRequest("", channel, "", "!evaismod") == "true" {
+			bt.Settings[channel].IsModerator = true
 		} else {
-			self.Settings[channel].IsModerator = false
+			bt.Settings[channel].IsModerator = false
 		}
-		self.saveSettings(channel)
+		bt.saveSettings(channel)
 	}
 }
 
-func (self *TwitchBot) saveSettings(channel string) {
-	channelSettingsJson, err := json.MarshalIndent(*self.Settings[channel], "", " ")
+func (bt *BotTwitch) saveSettings(channel string) {
+	channelSettingsJson, err := json.MarshalIndent(*bt.Settings[channel], "", " ")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -76,10 +76,10 @@ func (self *TwitchBot) saveSettings(channel string) {
 	}
 }
 
-func (self *TwitchBot) initViewersData() {
-	self.Viewers = make(map[string]*viewersData)
-	for _, channel := range self.Channels {
-		self.Viewers[channel] = &viewersData{}
+func (bt *BotTwitch) initViewersData() {
+	bt.Viewers = make(map[string]*viewersData)
+	for _, channel := range bt.Channels {
+		bt.Viewers[channel] = &viewersData{}
 		channelViwerFileJson, err := ioutil.ReadFile(
 			"logs/" + channel + " Channel/" + channel + " ViewersData.json")
 		if err != nil {
@@ -90,17 +90,17 @@ func (self *TwitchBot) initViewersData() {
 			}
 			fmt.Println("Ошибка чтения данных зрителей канала: ", err)
 		}
-		err = json.Unmarshal(channelViwerFileJson, &self.Viewers[channel].Viewers)
+		err = json.Unmarshal(channelViwerFileJson, &bt.Viewers[channel].Viewers)
 		if err != nil {
 			fmt.Println("Ошибка конвертирования структуры из файла в структуру зрителей: ", err)
 		}
-		self.saveViewersData(channel)
+		bt.saveViewersData(channel)
 	}
 }
 
-func (self *TwitchBot) saveViewersData(channel string) {
-	self.handleApiRequest("", channel, "", "requestallviewers")
-	channelViewerJson, err := json.MarshalIndent(&self.Viewers[channel].Viewers, "", " ")
+func (bt *BotTwitch) saveViewersData(channel string) {
+	bt.handleApiRequest("", channel, "", "requestallviewers")
+	channelViewerJson, err := json.MarshalIndent(&bt.Viewers[channel].Viewers, "", " ")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -117,16 +117,16 @@ func (self *TwitchBot) saveViewersData(channel string) {
 	}
 }
 
-func (self *TwitchBot) openChannelLog() {
-	self.FileChannelLog = make(map[string]*os.File)
-	for _, channel := range self.Channels {
+func (bt *BotTwitch) openChannelLog() {
+	bt.FileChannelLog = make(map[string]*os.File)
+	for _, channel := range bt.Channels {
 		var err error
 		err = os.MkdirAll("logs/"+channel+" Channel", 0777)
 		if err != nil && !strings.Contains(err.Error(), "Cannot create a file when that file already exists.") {
 			fmt.Println("Не удалось создать директорию для канала:", err)
 			err = nil
 		}
-		self.FileChannelLog[channel], err = os.OpenFile(
+		bt.FileChannelLog[channel], err = os.OpenFile(
 			"logs/"+channel+" Channel/"+channel+" Log.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
 			fmt.Println("Не удалось создать \\ открыть файл:", err)
@@ -134,7 +134,7 @@ func (self *TwitchBot) openChannelLog() {
 	}
 }
 
-func (self *TwitchBot) evalute() {
+func (bt *BotTwitch) evalute() {
 	for {
 		var cmd, message, channel string = "", "", ""
 		fmt.Scan(&cmd)
@@ -143,27 +143,27 @@ func (self *TwitchBot) evalute() {
 			fmt.Scan(&message)
 			message = strings.Replace(message, "!", " ", -1)
 			fmt.Scan(&channel)
-			self.say(message, channel)
+			bt.say(message, channel)
 		}
 		time.Sleep(1 * time.Second)
 	}
 }
 
-func (self *TwitchBot) Start() {
+func (bt *BotTwitch) Start() {
 	var err error
-	self.initBot()
-	go self.initApiConfig()
-	go self.evalute()
-	go self.initViewersData()
+	bt.initBot()
+	go bt.initApiConfig()
+	go bt.evalute()
+	go bt.initViewersData()
 	for {
-		self.connect()
-		err = self.joinChannels()
+		bt.connect()
+		err = bt.joinChannels()
 		if err != nil {
 			err = nil
 			continue
 		}
-		self.ReadChannels = textproto.NewReader(bufio.NewReader(self.Connection))
-		err = self.listenChannels()
+		bt.ReadChannels = textproto.NewReader(bufio.NewReader(bt.Connection))
+		err = bt.listenChannels()
 		if err != nil {
 			err = nil
 			time.Sleep(10 * time.Second)
@@ -172,30 +172,30 @@ func (self *TwitchBot) Start() {
 			break
 		}
 	}
-	defer self.Connection.Close()
+	defer bt.Connection.Close()
 }
 
-func (self *TwitchBot) connect() {
+func (bt *BotTwitch) connect() {
 	var err error
-	self.Connection, err = net.Dial("tcp", self.Server+":"+self.Port)
+	bt.Connection, err = net.Dial("tcp", bt.Server+":"+bt.Port)
 	if err != nil {
 		fmt.Println("Ошибка попытки соединения: ", err)
 		time.Sleep(10 * time.Second)
-		self.connect()
+		bt.connect()
 	}
 }
 
-func (self *TwitchBot) joinChannels() error {
+func (bt *BotTwitch) joinChannels() error {
 	var err error
-	_, err = self.Connection.Write([]byte("PASS " + self.OAuth + "\r\n"))
-	_, err = self.Connection.Write([]byte("NICK " + self.BotName + "\r\n"))
+	_, err = bt.Connection.Write([]byte("PASS " + bt.OAuth + "\r\n"))
+	_, err = bt.Connection.Write([]byte("NICK " + bt.BotName + "\r\n"))
 	if err != nil {
 		fmt.Println("Ошибка во время отправки логина: ", err)
 		time.Sleep(10 * time.Second)
 		return err
 	}
-	for _, channel := range self.Channels {
-		_, err := self.Connection.Write([]byte("JOIN #" + channel + "\r\n"))
+	for _, channel := range bt.Channels {
+		_, err := bt.Connection.Write([]byte("JOIN #" + channel + "\r\n"))
 		if err != nil {
 			fmt.Println("Ошибка во время входа в чат-комнату: ", err)
 			return err
@@ -204,32 +204,32 @@ func (self *TwitchBot) joinChannels() error {
 	return nil
 }
 
-func (self *TwitchBot) listenChannels() error {
+func (bt *BotTwitch) listenChannels() error {
 	var err error
-	self.openChannelLog()
-	self.initSettings()
-	for _, channelFile := range self.FileChannelLog {
+	bt.openChannelLog()
+	bt.initSettings()
+	for _, channelFile := range bt.FileChannelLog {
 		defer channelFile.Close()
 	}
-	go self.sendBlindRepeatMessage()
-	//go self.startPubSub()
+	go bt.sendBlindRepeatMessage()
+	//go bt.startPubSub()
 	for {
-		if err = self.handleChat(); err != nil {
+		if err = bt.handleChat(); err != nil {
 			return err
 		}
 	}
 }
 
-func (self *TwitchBot) say(msg, channel string) {
+func (bt *BotTwitch) say(msg, channel string) {
 	if msg == "" {
 		fmt.Println("Сообщение пустое")
 		return
 	}
-	_, err := self.Connection.Write([]byte("PRIVMSG #" + channel + " :" + msg + "\r\n"))
+	_, err := bt.Connection.Write([]byte("PRIVMSG #" + channel + " :" + msg + "\r\n"))
 	if err != nil {
 		fmt.Println("Ошибка отправки сообщения: ", err)
 	}
-	self.FileChannelLog[channel].WriteString("[" + timeStamp() + "] Канал:" + channel +
-		" Ник:" + self.BotName + "\tСообщение:" + msg + "\n")
-	fmt.Println("[" + timeStamp() + "] Канал:" + channel + "\tНик:" + self.BotName + "\tСообщение:" + msg + "\n")
+	bt.FileChannelLog[channel].WriteString("[" + timeStamp() + "] Канал:" + channel +
+		" Ник:" + bt.BotName + "\tСообщение:" + msg + "\n")
+	fmt.Println("[" + timeStamp() + "] Канал:" + channel + "\tНик:" + bt.BotName + "\tСообщение:" + msg + "\n")
 }

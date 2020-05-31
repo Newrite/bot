@@ -9,12 +9,12 @@ import (
 	"time"
 )
 
-func (self *TwitchBot) templateRequest(method, url, headAuth string) []byte {
+func (bt *BotTwitch) templateRequest(method, url, headAuth string) []byte {
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, nil)
 	req.Header.Set("Accept", "application/vnd.twitchtv.v5+json")
 	req.Header.Add("Authorization", headAuth)
-	req.Header.Add("Client-ID", self.ApiConf.Client_id)
+	req.Header.Add("Client-ID", bt.ApiConf.Client_id)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -29,98 +29,98 @@ func (self *TwitchBot) templateRequest(method, url, headAuth string) []byte {
 	return body
 }
 
-func (self *TwitchBot) initApiConfig() {
+func (bt *BotTwitch) initApiConfig() {
 	botConfig, err := ioutil.ReadFile("BotApiConfig.json")
 	if err != nil {
 		fmt.Print("Ошибка чтения данных апи для бота (BotApiConfig.json),"+
 			" должно находиться в корневой папке с исполняемым файлом: ", err)
 	}
-	err = json.Unmarshal(botConfig, &self.ApiConf)
+	err = json.Unmarshal(botConfig, &bt.ApiConf)
 	if err != nil {
 		fmt.Print("Ошибка конвертирования структуры из файла в апи структуру бота: ", err)
 	}
-	self.requestInitStreamersID()
+	bt.requestInitStreamersID()
 }
 
-func (self *TwitchBot) requestInitStreamersID() {
+func (bt *BotTwitch) requestInitStreamersID() {
 	var users usersData
-	self.ApiConf.Url = "https://api.twitch.tv/helix/users?login=" + self.Channels[0]
-	self.ApiConf.ChannelsID = make(map[string]string)
-	for _, channel := range self.Channels {
-		self.ApiConf.ChannelsID[channel] = ""
-		if channel != self.Channels[0] {
-			self.ApiConf.Url += "&login=" + channel
+	bt.ApiConf.Url = "https://api.twitch.tv/helix/users?login=" + bt.Channels[0]
+	bt.ApiConf.ChannelsID = make(map[string]string)
+	for _, channel := range bt.Channels {
+		bt.ApiConf.ChannelsID[channel] = ""
+		if channel != bt.Channels[0] {
+			bt.ApiConf.Url += "&login=" + channel
 		}
 	}
-	body := self.templateRequest("GET", self.ApiConf.Url, self.ApiConf.Bearer)
+	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
 	json.Unmarshal(body, &users)
-	for key, _ := range self.ApiConf.ChannelsID {
+	for key, _ := range bt.ApiConf.ChannelsID {
 		for _, channel := range users.User {
 			if channel.Login == key {
-				self.ApiConf.ChannelsID[key] = channel.Id
+				bt.ApiConf.ChannelsID[key] = channel.Id
 			}
 		}
 	}
 }
 
-func (self *TwitchBot) handleApiRequest(username, channel, message, cmd string) string {
+func (bt *BotTwitch) handleApiRequest(username, channel, message, cmd string) string {
 	switch cmd {
 	case "!вырубай":
-		if self.requestChatterData(channel, username, "mod") == "mod" {
+		if bt.requestChatterData(channel, username, "mod") == "mod" {
 			return "Моё уважение модераторскому корпусу, но нет roflanZdarova"
 		}
-		if self.requestBroadcasterSubscriptionsData(channel, username, "subus") == "Саб" {
-			if self.requestChatterData(channel, username, "vip") == "vip" {
+		if bt.requestBroadcasterSubscriptionsData(channel, username, "subus") == "Саб" {
+			if bt.requestChatterData(channel, username, "vip") == "vip" {
 				return "Можно пожалуйста постримить? PepeHands"
 			} else {
 				return "Зачем ты это делаешь? roflanZachto"
 			}
 		} else {
-			if self.requestChatterData(channel, username, "vip") == "vip" {
+			if bt.requestChatterData(channel, username, "vip") == "vip" {
 				return "Ты ходишь по тонкому льду, випчик.. Ладно живи roflanEbalo"
 			} else {
 				return "unsub"
 			}
 		}
 	case "userstate":
-		if self.requestChatterData(channel, username, "mod") == "mod" {
+		if bt.requestChatterData(channel, username, "mod") == "mod" {
 			return "mod"
 		}
-		if self.requestBroadcasterSubscriptionsData(channel, username, "subus") == "Саб" {
-			if self.requestChatterData(channel, username, "vip") == "vip" {
+		if bt.requestBroadcasterSubscriptionsData(channel, username, "subus") == "Саб" {
+			if bt.requestChatterData(channel, username, "vip") == "vip" {
 				return "subvip"
 			} else {
 				return "sub"
 			}
 		} else {
-			if self.requestChatterData(channel, username, "vip") == "vip" {
+			if bt.requestChatterData(channel, username, "vip") == "vip" {
 				return "vip"
 			} else {
 				return "unsub"
 			}
 		}
 	case "!evaismod":
-		if self.requestChatterData(channel, self.BotName, "mod") == "mod" {
+		if bt.requestChatterData(channel, bt.BotName, "mod") == "mod" {
 			return "true"
 		} else {
 			return "false"
 		}
 	case "requestallviewers":
-		self.requestChatterData(channel, "", "initviewers")
+		bt.requestChatterData(channel, "", "initviewers")
 		return ""
 	case "streamStatus":
-		return self.requestStreamData(channel, username, cmd)
+		return bt.requestStreamData(channel, username, cmd)
 	case "uptime":
-		return self.requestStreamData(channel, username, cmd)
+		return bt.requestStreamData(channel, username, cmd)
 	default:
 		return "error"
 	}
 }
 
-func (self *TwitchBot) requestChatterData(channel, username, cmd string) string {
+func (bt *BotTwitch) requestChatterData(channel, username, cmd string) string {
 	var chatters chattersData
-	self.ApiConf.Url = "https://tmi.twitch.tv/group/user/" + channel + "/chatters"
-	body := self.templateRequest("GET", self.ApiConf.Url, self.ApiConf.O_Auth)
+	bt.ApiConf.Url = "https://tmi.twitch.tv/group/user/" + channel + "/chatters"
+	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.O_Auth)
 	json.Unmarshal(body, &chatters)
 	switch cmd {
 	case "vip":
@@ -159,20 +159,20 @@ func (self *TwitchBot) requestChatterData(channel, username, cmd string) string 
 			tempstr = append(tempstr, name)
 		}
 		for _, name := range tempstr {
-			if self.checkToAddViewer(name, channel) {
+			if bt.checkToAddViewer(name, channel) {
 				tempstruct := &viewer{
 					Name:   name,
 					Points: 0,
 				}
-				self.Viewers[channel].Viewers = append(self.Viewers[channel].Viewers, tempstruct)
+				bt.Viewers[channel].Viewers = append(bt.Viewers[channel].Viewers, tempstruct)
 			}
 		}
 	}
 	return "Nothing"
 }
 
-func (self *TwitchBot) checkToAddViewer(name, channel string) bool {
-	for _, viewer := range self.Viewers[channel].Viewers {
+func (bt *BotTwitch) checkToAddViewer(name, channel string) bool {
+	for _, viewer := range bt.Viewers[channel].Viewers {
 		if name == viewer.Name {
 			return false
 		}
@@ -180,10 +180,10 @@ func (self *TwitchBot) checkToAddViewer(name, channel string) bool {
 	return true
 }
 
-func (self *TwitchBot) requestUsersData(channel, username, cmd string) string {
+func (bt *BotTwitch) requestUsersData(channel, username, cmd string) string {
 	var users usersData
-	self.ApiConf.Url = "https://api.twitch.tv/helix/users?login=" + channel
-	body := self.templateRequest("GET", self.ApiConf.Url, self.ApiConf.Bearer)
+	bt.ApiConf.Url = "https://api.twitch.tv/helix/users?login=" + channel
+	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
 	json.Unmarshal(body, &users)
 	if len(users.User) < 1 {
 		fmt.Println("requestUsersData аут оф аррей")
@@ -197,14 +197,14 @@ func (self *TwitchBot) requestUsersData(channel, username, cmd string) string {
 	}
 }
 
-func (self *TwitchBot) requestBroadcasterSubscriptionsData(channel, username, cmd string) string {
+func (bt *BotTwitch) requestBroadcasterSubscriptionsData(channel, username, cmd string) string {
 	var broadcasterSubscriptions broadcasterSubscriptionsData
-	self.ApiConf.Url = "https://api.twitch.tv/helix/subscriptions?broadcaster_id=" + self.ApiConf.ChannelsID[channel]
-	body := self.templateRequest("GET", self.ApiConf.Url, self.ApiConf.Bearer)
+	bt.ApiConf.Url = "https://api.twitch.tv/helix/subscriptions?broadcaster_id=" + bt.ApiConf.ChannelsID[channel]
+	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
 	json.Unmarshal(body, &broadcasterSubscriptions)
 	switch cmd {
 	case "subus":
-		username = self.requestUsersData(username, channel, "DisNam")
+		username = bt.requestUsersData(username, channel, "DisNam")
 		for _, name := range broadcasterSubscriptions.Subscriptions {
 			if name.User_name == username {
 				return "Саб"
@@ -216,10 +216,10 @@ func (self *TwitchBot) requestBroadcasterSubscriptionsData(channel, username, cm
 	}
 }
 
-func (self *TwitchBot) requestStreamData(channel, username, cmd string) string {
+func (bt *BotTwitch) requestStreamData(channel, username, cmd string) string {
 	var stream streamData
-	self.ApiConf.Url = "https://api.twitch.tv/helix/streams?user_login=" + channel
-	body := self.templateRequest("GET", self.ApiConf.Url, self.ApiConf.Bearer)
+	bt.ApiConf.Url = "https://api.twitch.tv/helix/streams?user_login=" + channel
+	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
 	json.Unmarshal(body, &stream)
 	if len(stream.Data) < 1 {
 		return "offline"

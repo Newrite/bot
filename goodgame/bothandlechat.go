@@ -9,44 +9,44 @@ import (
 	"time"
 )
 
-func (self *GoodGameBot) handleChat() error {
-	response := self.readServer()
+func (bgg *BotGoodGame) handleChat() error {
+	response := bgg.readServer()
 	fmt.Println(response)
 	if !strings.Contains(response, "\"type\":\"message\"") {
 		return nil
 	}
-	var username, channel, message string = self.handleLine(response)
+	var username, channel, message string = bgg.handleLine(response)
 	fmt.Println(username, channel, message)
-	self.checkReact(channel, message)
+	bgg.checkReact(channel, message)
 	message = strings.ToLower(message)
-	self.checkCMD(channel, username, message)
+	bgg.checkCMD(channel, username, message)
 	time.Sleep(10 * time.Millisecond)
 	return nil
 }
 
-func (self *GoodGameBot) checkReact(channel, message string) {
+func (bgg *BotGoodGame) checkReact(channel, message string) {
 	for key := range react {
 		if strings.Contains(message, key) {
-			self.say(react[key], channel)
+			bgg.say(react[key], channel)
 			break
 		}
 	}
 }
 
-func (self *GoodGameBot) checkCMD(channel, userName, message string) {
+func (bgg *BotGoodGame) checkCMD(channel, userName, message string) {
 	for key, value := range cmd {
 		if strings.HasPrefix(message, key) && value != "_" {
-			self.say(userName+", "+cmd[key], channel)
+			bgg.say(userName+", "+cmd[key], channel)
 			break
 		}
 		if strings.HasPrefix(message, key) && value == "_" {
-			go self.say(self.handleInteractiveCMD(key, channel, userName, message), channel)
+			go bgg.say(bgg.handleInteractiveCMD(key, channel, userName, message), channel)
 			break
 		}
 	}
 }
 
-func (self *GoodGameBot) handleInteractiveCMD(cmd, channel, userName, message string) string {
+func (bgg *BotGoodGame) handleInteractiveCMD(cmd, channel, userName, message string) string {
 	switch cmd {
 	case "!roll":
 		return userName + ", " + strconv.Itoa(rand.Intn(21))
@@ -54,12 +54,14 @@ func (self *GoodGameBot) handleInteractiveCMD(cmd, channel, userName, message st
 		return reso.EvaAnswers[rand.Intn(16)]
 	case "!билд":
 		return reso.BuildAnswers[rand.Intn(16)]
+	case "!uptime":
+		return bgg.TwitchPtr.HandleRequests("uptime")
 	default:
 		return ""
 	}
 }
 
-func (self *GoodGameBot) handleLine(line string) (user, channel, message string) {
+func (bgg *BotGoodGame) handleLine(line string) (user, channel, message string) {
 	line = strings.Replace(line, "\"", " ", -1)
 	lineSlice := strings.Fields(line)
 	var tempId int

@@ -10,22 +10,22 @@ import (
 const URL string = "wss://pubsub-edge.twitch.tv/"
 const ORIGIN string = "https://pubsub-edge.twitch.tv/"
 
-func (self *TwitchBot) startPubSub() {
+func (bt *BotTwitch) startPubSub() {
 	var err error
-	self.WebSocketConnection, err = websocket.Dial(URL, "", ORIGIN)
+	bt.WebSocketConnection, err = websocket.Dial(URL, "", ORIGIN)
 	if err != nil {
 		fmt.Println(err)
 	}
-	go self.pingSub()
-	self.startListenChannelPoints()
-	self.serverResponse = make([]byte, 4096)
-	self.listenPubSub()
+	go bt.pingSub()
+	bt.startListenChannelPoints()
+	bt.serverResponse = make([]byte, 4096)
+	bt.listenPubSub()
 }
 
-func (self *TwitchBot) pingSub() {
+func (bt *BotTwitch) pingSub() {
 	var err error
 	for {
-		_, err = self.WebSocketConnection.Write([]byte(`{"type":"PING"}`))
+		_, err = bt.WebSocketConnection.Write([]byte(`{"type":"PING"}`))
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -33,31 +33,31 @@ func (self *TwitchBot) pingSub() {
 	}
 }
 
-func (self *TwitchBot) startListenChannelPoints() {
+func (bt *BotTwitch) startListenChannelPoints() {
 	var err error
-	_, err = self.WebSocketConnection.Write([]byte(`{"type":"LISTEN","nonce":"qweprotiyunb","data":{"topics":["channel-points-channel-v1.` + self.ApiConf.ChannelsID[channelRflyq] + `"],"auth_token":"` + self.ApiConf.ReflyToken + `"}}`))
+	_, err = bt.WebSocketConnection.Write([]byte(`{"type":"LISTEN","nonce":"qweprotiyunb","data":{"topics":["channel-points-channel-v1.` + bt.ApiConf.ChannelsID[channelRflyq] + `"],"auth_token":"` + bt.ApiConf.ReflyToken + `"}}`))
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-func (self *TwitchBot) listenPubSub() {
+func (bt *BotTwitch) listenPubSub() {
 	var err error
 	for {
-		self.n, err = self.WebSocketConnection.Read(self.serverResponse)
+		bt.n, err = bt.WebSocketConnection.Read(bt.serverResponse)
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Printf("Recived: %s \n", self.serverResponse[:self.n])
-		if strings.Contains(string(self.serverResponse[:self.n]), "\"topic\":\"channel-points-channel-v1") {
-			var username, message, cmd string = self.handlePubSub(string(self.serverResponse[:self.n]))
+		fmt.Printf("Recived: %s \n", bt.serverResponse[:bt.n])
+		if strings.Contains(string(bt.serverResponse[:bt.n]), "\"topic\":\"channel-points-channel-v1") {
+			var username, message, cmd string = bt.handlePubSub(string(bt.serverResponse[:bt.n]))
 			fmt.Println(username, message, cmd)
 		}
 		time.Sleep(1 * time.Second)
 	}
 }
 
-func (self *TwitchBot) handlePubSub(body string) (username, message, cmd string) {
+func (bt *BotTwitch) handlePubSub(body string) (username, message, cmd string) {
 	body = strings.Replace(body, "\"", " ", -1)
 	body = strings.Replace(body, ":", " ", -1)
 	body = strings.Replace(body, "\\", " ", -1)

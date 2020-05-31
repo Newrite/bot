@@ -1,6 +1,7 @@
 package goodgame
 
 import (
+	"bot/twitch"
 	"golang.org/x/net/websocket"
 	"time"
 )
@@ -14,7 +15,7 @@ func timeStamp() string {
 
 var cmd = map[string]string{
 	"!ping": "pong!",
-	"!бот": "AdaIsEva, чат-бот для GG и Twitch, написана на GoLang v1.14 без использования сторонних библиотек. " +
+	"!бот": "AdaIsEva, чат-бот для GG и twitch, написана на GoLang v1.14 без использования сторонних библиотек. " +
 		"Живет на VPS с убунтой размещенном в москоу сити. Рекомендации, пожелания и" +
 		" прочая можно присылать на adaiseva.newrite@gmail.com",
 	"!help": "Доступные комманды: !ping, !бот, !roll, !help, !Eva",
@@ -33,6 +34,7 @@ var cmd = map[string]string{
 	"!труба":            "_",
 	"!тыктоблять":       "_",
 	"!дискорд":          "_",
+	"!uptime":           "_",
 }
 
 var react = map[string]string{
@@ -43,7 +45,7 @@ var react = map[string]string{
 	"+ в чат": "+",
 }
 
-type GoodGameBot struct {
+type BotGoodGame struct {
 	BotName        string   `json:"bot_name"`
 	Token          string   `json:"token"`
 	BotId          string   `json:"bot_id"`
@@ -51,6 +53,7 @@ type GoodGameBot struct {
 	Origin         string   `json:"origin"`
 	OwnerBot       string   `json:"owner_bot"`
 	Channels       []string `json:"channels"`
+	TwitchPtr      *twitch.BotTwitch
 	Connection     *websocket.Conn
 	serverResponse []byte
 	n              int

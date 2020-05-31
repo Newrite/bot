@@ -6,17 +6,17 @@ import (
 
 var channelBlinde string = "blindwalkerboy"
 
-func (self *TwitchBot) sendBlindRepeatMessage() {
+func (bt *BotTwitch) sendBlindRepeatMessage() {
 	for {
-		if self.handleApiRequest("", channelBlinde, "", "streamStatus") == "online" {
-			self.say("Привет, дружище! Приглашаю тебя в лучшее сообщество по Requiem"+
+		if bt.handleApiRequest("", channelBlinde, "", "streamStatus") == "online" {
+			bt.say("Привет, дружище! Приглашаю тебя в лучшее сообщество по Requiem"+
 				" и ламповое убежище для настоящих мужчин - https://discord.gg/4yqdafW", channelBlinde)
 		}
 		time.Sleep(15 * time.Minute)
 	}
 }
 
-func (self *TwitchBot) handleBlindCMD(userName, message, cmd string) string {
+func (bt *BotTwitch) handleBlindCMD(userName, message, cmd string) string {
 	switch cmd {
 	case "!чезаигра":
 		return "Skyrim с модификацией Requiem от Xandr'а. Ебашим на максимальной сложности без смертей, чтобы жизнь мёдом не казалась PepeSmoke"

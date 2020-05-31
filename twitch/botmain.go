@@ -52,7 +52,7 @@ var react = map[string]string{
 	"+ в чат":  "+",
 }
 
-type TwitchBot struct {
+type BotTwitch struct {
 	BotName             string   `json:"bot_name"`
 	OAuth               string   `json:"o_auth"`
 	Server              string   `json:"server"`
@@ -63,12 +63,13 @@ type TwitchBot struct {
 	WebSocketConnection *websocket.Conn
 	ReadChannels        *textproto.Reader
 	ApiConf             *apiConfig
-	MutedUsers          string
-	serverResponse      []byte
-	n                   int
-	FileChannelLog      map[string]*os.File
-	Settings            map[string]*botSettings
-	Viewers             map[string]*viewersData
+	//GoodGameBotPtr      *goodgame.BotGoodGame
+	MutedUsers     string
+	serverResponse []byte
+	n              int
+	FileChannelLog map[string]*os.File
+	Settings       map[string]*botSettings
+	Viewers        map[string]*viewersData
 }
 
 type botSettings struct {

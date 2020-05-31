@@ -1,16 +1,28 @@
 package main
 
 import (
+	"bot/discord"
 	"bot/goodgame"
 	"bot/twitch"
 	"math/rand"
 	"time"
 )
 
+type Bot struct {
+	TBot  *twitch.BotTwitch
+	GGBot *goodgame.BotGoodGame
+	DBot  *discord.DiscordBot
+}
+
 func main() {
-	var twitchBot twitch.TwitchBot
-	var goodGameBot goodgame.GoodGameBot
+	bot := &Bot{
+		&twitch.BotTwitch{},
+		&goodgame.BotGoodGame{},
+		&discord.DiscordBot{},
+	}
 	rand.Seed(time.Now().Unix())
-	go goodGameBot.Start()
-	twitchBot.Start()
+	bot.GGBot.TwitchPtr = bot.TBot
+	go bot.GGBot.Start()
+	go bot.TBot.Start()
+	bot.DBot.Start()
 }

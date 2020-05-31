@@ -5,13 +5,13 @@ import (
 	"strings"
 )
 
-func (self *TwitchBot) resurrected(message, channel string) string {
+func (bt *BotTwitch) resurrected(message, channel string) string {
 	messageSlice := strings.Fields(message)
 	if len(messageSlice) < 3 {
 		return ""
 	}
 	if rand.Intn(99)+1 >= 70 {
-		self.say("/untimeout "+messageSlice[2], channel)
+		bt.say("/untimeout "+messageSlice[2], channel)
 		switch rand.Intn(4) {
 		case 0:
 			return messageSlice[2] + " Восстань, избранный мертвец!"
