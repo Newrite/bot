@@ -1,4 +1,4 @@
-package twitch
+package bots
 
 import (
 	"math/rand"
@@ -10,7 +10,7 @@ var channelRflyq string = "reflyq"
 
 func (bt *BotTwitch) handleReflyqCMD(userName, message, cmd string) string {
 	switch cmd {
-	case "!вырубай":
+	case "вырубай":
 		if userName == "ifozar" {
 			bt.say("iFozar заебал уже эту хуйню писать", channelRflyq)
 			return "/timeout ifozar 300"
@@ -21,7 +21,7 @@ func (bt *BotTwitch) handleReflyqCMD(userName, message, cmd string) string {
 			bt.say("@"+userName+" Я тебя щас нахуй вырублю, ансаб блять НЫА roflanEbalo", channelRflyq)
 			return "/timeout " + userName + " 120"
 		}
-	case "!вырубить":
+	case "вырубить":
 		tempStrSlice := strings.Fields(message)
 		if len(tempStrSlice) < 2 {
 			return ""
@@ -159,7 +159,7 @@ func (bt *BotTwitch) handleReflyqCMD(userName, message, cmd string) string {
 	default:
 		return "none"
 	}
-	return "none"
+	return "Ашибка (handleReflyqCMD)"
 }
 
 func (bt *BotTwitch) reflyqAnswer(offUser, deffUser, channel string, victory bool) string {

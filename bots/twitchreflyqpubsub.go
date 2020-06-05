@@ -1,20 +1,27 @@
-package twitch
+package bots
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/websocket"
 	"strings"
 	"time"
 )
 
-const URL string = "wss://pubsub-edge.twitch.tv/"
-const ORIGIN string = "https://pubsub-edge.twitch.tv/"
+const URL string = "wss://pubsub-edge.Twitch.tv/"
+const ORIGIN string = "https://pubsub-edge.Twitch.tv/"
 
 func (bt *BotTwitch) startPubSub() {
 	var err error
 	bt.WebSocketConnection, err = websocket.Dial(URL, "", ORIGIN)
 	if err != nil {
-		fmt.Println(err)
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "websocket.Dial",
+			"file":     "twitchreflyqpubsub.go",
+			"body":     "startPubSub",
+			"error":    err,
+		}).Errorln("Ошибка соединения к пабсабу.")
 	}
 	go bt.pingSub()
 	bt.startListenChannelPoints()
@@ -27,7 +34,13 @@ func (bt *BotTwitch) pingSub() {
 	for {
 		_, err = bt.WebSocketConnection.Write([]byte(`{"type":"PING"}`))
 		if err != nil {
-			fmt.Println(err)
+			log.WithFields(log.Fields{
+				"package":  "bots",
+				"function": "WebSocketConnection.Write",
+				"file":     "twitchreflyqpubsub.go",
+				"body":     "pingSub",
+				"error":    err,
+			}).Errorln("Ошибка отправки пинга.")
 		}
 		time.Sleep(5 * time.Minute)
 	}
@@ -37,7 +50,13 @@ func (bt *BotTwitch) startListenChannelPoints() {
 	var err error
 	_, err = bt.WebSocketConnection.Write([]byte(`{"type":"LISTEN","nonce":"qweprotiyunb","data":{"topics":["channel-points-channel-v1.` + bt.ApiConf.ChannelsID[channelRflyq] + `"],"auth_token":"` + bt.ApiConf.ReflyToken + `"}}`))
 	if err != nil {
-		fmt.Println(err)
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "WebSocketConnection.Write",
+			"file":     "twitchreflyqpubsub.go",
+			"body":     "startListenChannelPoints",
+			"error":    err,
+		}).Errorln("Ошибка отправки реквеста на слушание паба.")
 	}
 }
 
@@ -46,7 +65,13 @@ func (bt *BotTwitch) listenPubSub() {
 	for {
 		bt.n, err = bt.WebSocketConnection.Read(bt.serverResponse)
 		if err != nil {
-			fmt.Println(err)
+			log.WithFields(log.Fields{
+				"package":  "bots",
+				"function": "WebSocketConnection.Read",
+				"file":     "twitchreflyqpubsub.go",
+				"body":     "listenPubSub",
+				"error":    err,
+			}).Errorln("Ошибка чтения ответа сервера.")
 		}
 		fmt.Printf("Recived: %s \n", bt.serverResponse[:bt.n])
 		if strings.Contains(string(bt.serverResponse[:bt.n]), "\"topic\":\"channel-points-channel-v1") {

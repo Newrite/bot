@@ -1,4 +1,4 @@
-package twitch
+package bots
 
 import (
 	"math/rand"

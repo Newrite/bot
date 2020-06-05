@@ -1,4 +1,4 @@
-package twitch
+package bots
 
 type chattersData struct {
 	Chatter_count int `json:"chatter_count"`

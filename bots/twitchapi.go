@@ -1,8 +1,8 @@
-package twitch
+package bots
 
 import (
 	"encoding/json"
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -12,19 +12,43 @@ import (
 func (bt *BotTwitch) templateRequest(method, url, headAuth string) []byte {
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, nil)
+	if req == nil || err != nil {
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "NewRequest",
+			"file":     "twitchapi.go",
+			"body":     "templateRequest",
+			"error":    err,
+			"params":   method + " " + url,
+		}).Errorln("Request == nil.")
+		return nil
+	}
 	req.Header.Set("Accept", "application/vnd.twitchtv.v5+json")
 	req.Header.Add("Authorization", headAuth)
 	req.Header.Add("Client-ID", bt.ApiConf.Client_id)
-	if err != nil {
-		fmt.Println(err)
-	}
 	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
+	if err != nil || resp == nil {
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "client.Do",
+			"file":     "twitchapi.go",
+			"body":     "templateRequest",
+			"error":    err,
+			"Request":  req,
+		}).Errorln("Ошибка обработки реквеста.")
+		return nil
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "ioutil.ReadAll",
+			"file":     "twitchapi.go",
+			"body":     "templateRequest",
+			"error":    err,
+			"Request":  req,
+		}).Errorln("Ошибка парсинга тела реквеста в срез байтов.")
+		return nil
 	}
 	return body
 }
@@ -32,19 +56,31 @@ func (bt *BotTwitch) templateRequest(method, url, headAuth string) []byte {
 func (bt *BotTwitch) initApiConfig() {
 	botConfig, err := ioutil.ReadFile("BotApiConfig.json")
 	if err != nil {
-		fmt.Print("Ошибка чтения данных апи для бота (BotApiConfig.json),"+
-			" должно находиться в корневой папке с исполняемым файлом: ", err)
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "ioutil.ReadAll",
+			"file":     "twitchapi.go",
+			"body":     "initApiConfig",
+			"error":    err,
+		}).Errorln("Ошибка чтения данных апи для бота (BotApiConfig.json), должно находиться" +
+			" в корневой папке с исполняемым файлом.")
 	}
 	err = json.Unmarshal(botConfig, &bt.ApiConf)
 	if err != nil {
-		fmt.Print("Ошибка конвертирования структуры из файла в апи структуру бота: ", err)
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "json.Unmarshal",
+			"file":     "twitchapi.go",
+			"body":     "initApiConfig",
+			"error":    err,
+		}).Errorln("Ошибка конвертирования структуры из файла в апи структуру бота.")
 	}
 	bt.requestInitStreamersID()
 }
 
 func (bt *BotTwitch) requestInitStreamersID() {
 	var users usersData
-	bt.ApiConf.Url = "https://api.twitch.tv/helix/users?login=" + bt.Channels[0]
+	bt.ApiConf.Url = "https://api.Twitch.tv/helix/Users?login=" + bt.Channels[0]
 	bt.ApiConf.ChannelsID = make(map[string]string)
 	for _, channel := range bt.Channels {
 		bt.ApiConf.ChannelsID[channel] = ""
@@ -53,7 +89,16 @@ func (bt *BotTwitch) requestInitStreamersID() {
 		}
 	}
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
-	json.Unmarshal(body, &users)
+	err := json.Unmarshal(body, &users)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "json.Unmarshal",
+			"file":     "twitchapi.go",
+			"body":     "requestInitStreamersID",
+			"error":    err,
+		}).Errorln("Ошибка конвертирования структуры.")
+	}
 	for key, _ := range bt.ApiConf.ChannelsID {
 		for _, channel := range users.User {
 			if channel.Login == key {
@@ -119,9 +164,18 @@ func (bt *BotTwitch) handleApiRequest(username, channel, message, cmd string) st
 
 func (bt *BotTwitch) requestChatterData(channel, username, cmd string) string {
 	var chatters chattersData
-	bt.ApiConf.Url = "https://tmi.twitch.tv/group/user/" + channel + "/chatters"
+	bt.ApiConf.Url = "https://tmi.Twitch.tv/group/user/" + channel + "/chatters"
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.O_Auth)
-	json.Unmarshal(body, &chatters)
+	err := json.Unmarshal(body, &chatters)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "json.Unmarshal",
+			"file":     "twitchapi.go",
+			"body":     "requestChatterData",
+			"error":    err,
+		}).Errorln("Ошибка конвертирования структуры.")
+	}
 	switch cmd {
 	case "vip":
 		for _, name := range chatters.Chatters.Vips {
@@ -182,11 +236,26 @@ func (bt *BotTwitch) checkToAddViewer(name, channel string) bool {
 
 func (bt *BotTwitch) requestUsersData(channel, username, cmd string) string {
 	var users usersData
-	bt.ApiConf.Url = "https://api.twitch.tv/helix/users?login=" + channel
+	bt.ApiConf.Url = "https://api.Twitch.tv/helix/Users?login=" + channel
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
-	json.Unmarshal(body, &users)
+	err := json.Unmarshal(body, &users)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "json.Unmarshal",
+			"file":     "twitchapi.go",
+			"body":     "requestUsersData",
+			"error":    err,
+		}).Errorln("Ошибка конвертирования структуры.")
+	}
 	if len(users.User) < 1 {
-		fmt.Println("requestUsersData аут оф аррей")
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "len(users.User) < 1 ",
+			"file":     "twitchapi.go",
+			"body":     "requestUsersData",
+			"error":    err,
+		}).Errorln("Пустой срез юзверей.")
 		return ""
 	}
 	switch cmd {
@@ -199,9 +268,18 @@ func (bt *BotTwitch) requestUsersData(channel, username, cmd string) string {
 
 func (bt *BotTwitch) requestBroadcasterSubscriptionsData(channel, username, cmd string) string {
 	var broadcasterSubscriptions broadcasterSubscriptionsData
-	bt.ApiConf.Url = "https://api.twitch.tv/helix/subscriptions?broadcaster_id=" + bt.ApiConf.ChannelsID[channel]
+	bt.ApiConf.Url = "https://api.Twitch.tv/helix/subscriptions?broadcaster_id=" + bt.ApiConf.ChannelsID[channel]
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
-	json.Unmarshal(body, &broadcasterSubscriptions)
+	err := json.Unmarshal(body, &broadcasterSubscriptions)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "json.Unmarshal",
+			"file":     "twitchapi.go",
+			"body":     "requestBroadcasterSubscriptionsData",
+			"error":    err,
+		}).Errorln("Ошибка конвертирования структуры.")
+	}
 	switch cmd {
 	case "subus":
 		username = bt.requestUsersData(username, channel, "DisNam")
@@ -218,9 +296,18 @@ func (bt *BotTwitch) requestBroadcasterSubscriptionsData(channel, username, cmd 
 
 func (bt *BotTwitch) requestStreamData(channel, username, cmd string) string {
 	var stream streamData
-	bt.ApiConf.Url = "https://api.twitch.tv/helix/streams?user_login=" + channel
+	bt.ApiConf.Url = "https://api.Twitch.tv/helix/streams?user_login=" + channel
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
-	json.Unmarshal(body, &stream)
+	err := json.Unmarshal(body, &stream)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "json.Unmarshal",
+			"file":     "twitchapi.go",
+			"body":     "requestStreamData",
+			"error":    err,
+		}).Errorln("Ошибка конвертирования структуры.")
+	}
 	if len(stream.Data) < 1 {
 		return "offline"
 	}

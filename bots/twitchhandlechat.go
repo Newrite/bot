@@ -1,9 +1,8 @@
-package twitch
+package bots
 
 import (
-	"bot/reso"
 	"fmt"
-	"math/rand"
+	log "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 	"time"
@@ -12,12 +11,28 @@ import (
 func (bt *BotTwitch) handleChat() error {
 	line, err := bt.ReadChannels.ReadLine()
 	if err != nil {
-		fmt.Println("Ошибка во время чтения строки: ", err)
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "ReadChannels.ReadLine",
+			"file":     "twitchhandlechat.go",
+			"body":     "handleChat",
+			"error":    err,
+		}).Errorln("Ошибка чтения строки.")
 		return err
 	}
-	if line == "PING :tmi.twitch.tv" {
-		fmt.Println("PING :tmi.twitch.tv")
-		bt.Connection.Write([]byte("PONG\r\n"))
+	if line == "PING :tmi.Twitch.tv" {
+		fmt.Println("PING :tmi.Twitch.tv")
+		_, err := bt.Connection.Write([]byte("PONG\r\n"))
+		if err != nil {
+			log.WithFields(log.Fields{
+				"package":  "bots",
+				"function": "Connection.Write",
+				"file":     "twitchhandlechat.go",
+				"body":     "handleChat",
+				"error":    err,
+			}).Errorln("Ошибка отправки сообщения.")
+			return err
+		}
 		return nil
 	}
 	var userName, channel, message string = bt.handleLine(line)
@@ -32,18 +47,38 @@ func (bt *BotTwitch) handleChat() error {
 		}
 	}
 	bt.checkReact(channel, message)
+	if strings.Contains(message, "револьвер выстреливает!") && userName == "moobot" {
+		bt.say(bt.resurrected(message, channel), channel)
+	}
 	message = strings.ToLower(message)
-	bt.checkCMD(channel, userName, message)
+	if strings.HasPrefix(message, TwPrefix) {
+		if _, ok := bt.Settings[channel]; ok {
+			if bt.Settings[channel].CMDStatus {
+				msgSl := strings.Fields(message)
+				go bt.say(checkCMD(userName, channel, msgSl[0], "TW", message), channel)
+			}
+		}
+	}
 	time.Sleep(10 * time.Millisecond)
 	return nil
 }
 func (bt *BotTwitch) writeLog(userName, channel, message string) {
-	if message != "" && !strings.Contains(userName, bt.BotName+".tmi.twitch.tv 353") &&
-		!strings.Contains(userName, bt.BotName+".tmi.twitch.tv 366") {
-		bt.FileChannelLog[channel].WriteString("[" + timeStamp() + "] Канал:" + channel +
+	if message != "" && !strings.Contains(userName, bt.BotName+".tmi.Twitch.tv 353") &&
+		!strings.Contains(userName, bt.BotName+".tmi.Twitch.tv 366") {
+		_, err := bt.FileChannelLog[channel].WriteString("[" + timeStamp() + "] Канал:" + channel +
 			" Ник:" + userName + "\tСообщение:" + message + "\n")
-		fmt.Print("[" + timeStamp() + "] Канал:" + channel +
-			"\tНик:" + userName + "\tСообщение:" + message + "\n")
+		if err != nil {
+			log.WithFields(log.Fields{
+				"package":  "bots",
+				"function": "FileChannelLog[channel].WriteString",
+				"file":     "twitchhandlechat.go",
+				"body":     "writeLog",
+				"error":    err,
+			}).Errorln("Ошибка записи лога.")
+		}
+		log.Infof("Ник: %s Канал: %s Сообщение: %s\n", userName, channel, message)
+		//fmt.Print("[" + timeStamp() + "] Канал:" + channel +
+		//	"\tНик:" + userName + "\tСообщение:" + message + "\n")
 	}
 }
 
@@ -52,28 +87,11 @@ func (bt *BotTwitch) checkReact(channel, message string) {
 		if bt.Settings[channel].ReactStatus &&
 			(time.Now().Unix()-bt.Settings[channel].ReactRate.Unix() >=
 				int64(bt.Settings[channel].ReactTime)) {
-			for key := range react {
+			for key := range reactTW {
 				if strings.Contains(message, key) {
 					bt.Settings[channel].ReactRate = time.Now()
 					go bt.saveSettings(channel)
-					bt.say(react[key], channel)
-					break
-				}
-			}
-		}
-	}
-}
-
-func (bt *BotTwitch) checkCMD(channel, userName, message string) {
-	if _, ok := bt.Settings[channel]; ok {
-		if bt.Settings[channel].CMDStatus {
-			for key, value := range cmd {
-				if strings.HasPrefix(message, key) && value != "_" {
-					bt.say("@"+userName+" "+cmd[key], channel)
-					break
-				}
-				if strings.HasPrefix(message, key) && value == "_" {
-					go bt.say(bt.handleInteractiveCMD(key, channel, userName, message), channel)
+					bt.say(reactTW[key], channel)
 					break
 				}
 			}
@@ -96,7 +114,7 @@ func (bt *BotTwitch) handleMasterCmd(message, channel string) {
 			bt.saveSettings(channel)
 			return
 		}
-	case strings.HasPrefix(message, "!Ada, switch react"):
+	case strings.HasPrefix(message, "!Ada, switch reactTW"):
 		switch bt.Settings[channel].ReactStatus {
 		case true:
 			bt.Settings[channel].ReactStatus = false
@@ -147,7 +165,7 @@ func (bt *BotTwitch) handleMasterCmd(message, channel string) {
 			} else {
 				return "False"
 			}
-		}()+" Last react time: "+bt.Settings[channel].ReactRate.Format(TimeFormatReact)+
+		}()+" Last reactTW time: "+bt.Settings[channel].ReactRate.Format(TimeFormatReact)+
 			" React rate time: "+strconv.Itoa(bt.Settings[channel].ReactTime), channel)
 		return
 	case strings.HasPrefix(message, "!Ada, set reactrate to"):
@@ -208,34 +226,6 @@ func (bt *BotTwitch) handleMasterCmd(message, channel string) {
 			go bt.saveViewersData(channel)
 			return
 		}
-	}
-}
-
-func (bt *BotTwitch) handleInteractiveCMD(cmd, channel, userName, message string) string {
-	switch channel {
-	case "blindwalkerboy":
-		if tempAnswer := bt.handleBlindCMD(userName, message, cmd); tempAnswer != "none" {
-			return tempAnswer
-		}
-	case "reflyq":
-		if tempAnswer := bt.handleReflyqCMD(userName, message, cmd); tempAnswer != "none" {
-			return tempAnswer
-		}
-	}
-	if cmd == "револьвер выстреливает!" && userName == "moobot" {
-		return bt.resurrected(message, channel)
-	}
-	switch cmd {
-	case "!roll":
-		return "@" + userName + " " + strconv.Itoa(rand.Intn(21))
-	case "!uptime":
-		return "@" + userName + " " + bt.handleApiRequest(userName, channel, message, "uptime")
-	case "!eva":
-		return reso.EvaAnswers[rand.Intn(16)]
-	case "!билд":
-		return reso.BuildAnswers[rand.Intn(16)]
-	default:
-		return ""
 	}
 }
 
