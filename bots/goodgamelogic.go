@@ -106,6 +106,7 @@ func (bgg *BotGoodGame) Start() {
 			err = nil
 			continue
 		}
+		bgg.uptime = time.Now().Unix()
 		err = bgg.listenChannels()
 		if err != nil {
 			err = nil

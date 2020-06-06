@@ -12,6 +12,7 @@ type BotGoodGame struct {
 	Origin         string   `json:"origin"`
 	OwnerBot       string   `json:"owner_bot"`
 	Channels       []string `json:"Channels"`
+	uptime         int64
 	TwitchPtr      *BotTwitch
 	DiscordPtr     *BotDiscord
 	Connection     *websocket.Conn

@@ -150,9 +150,6 @@ func (bt *BotTwitch) handleApiRequest(username, channel, message, cmd string) st
 		} else {
 			return "false"
 		}
-	case "requestallviewers":
-		bt.requestChatterData(channel, "", "initviewers")
-		return ""
 	case "streamStatus":
 		return bt.requestStreamData(channel, username, cmd)
 	case "uptime":
@@ -189,49 +186,8 @@ func (bt *BotTwitch) requestChatterData(channel, username, cmd string) string {
 				return "mod"
 			}
 		}
-	case "initviewers":
-		tempstr := make([]string, 0, 0)
-		for _, name := range chatters.Chatters.Viewers {
-			tempstr = append(tempstr, name)
-		}
-		for _, name := range chatters.Chatters.Moderators {
-			tempstr = append(tempstr, name)
-		}
-		for _, name := range chatters.Chatters.Global_mods {
-			tempstr = append(tempstr, name)
-		}
-		for _, name := range chatters.Chatters.Admins {
-			tempstr = append(tempstr, name)
-		}
-		for _, name := range chatters.Chatters.Vips {
-			tempstr = append(tempstr, name)
-		}
-		for _, name := range chatters.Chatters.Broadcaster {
-			tempstr = append(tempstr, name)
-		}
-		for _, name := range chatters.Chatters.Staff {
-			tempstr = append(tempstr, name)
-		}
-		for _, name := range tempstr {
-			if bt.checkToAddViewer(name, channel) {
-				tempstruct := &viewer{
-					Name:   name,
-					Points: 0,
-				}
-				bt.Viewers[channel].Viewers = append(bt.Viewers[channel].Viewers, tempstruct)
-			}
-		}
 	}
 	return "Nothing"
-}
-
-func (bt *BotTwitch) checkToAddViewer(name, channel string) bool {
-	for _, viewer := range bt.Viewers[channel].Viewers {
-		if name == viewer.Name {
-			return false
-		}
-	}
-	return true
 }
 
 func (bt *BotTwitch) requestUsersData(channel, username, cmd string) string {

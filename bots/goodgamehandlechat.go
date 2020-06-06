@@ -1,7 +1,7 @@
 package bots
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -12,12 +12,13 @@ func (bgg *BotGoodGame) handleChat() error {
 		return nil
 	}
 	var userName, channel, message string = bgg.handleLine(response)
-	log.Infof("Ник: %s Канал: %s Сообщение: %s\n", userName, channel, message)
+	fmt.Print("[" + timeStamp() + "] [GOODGAME] Канал:" + channel + " " +
+		"Ник:" + userName + "\tСообщение:" + message + "\n")
 	bgg.checkReact(channel, message)
-	message = strings.ToLower(message)
-	if strings.HasPrefix(message, GgPrefix) {
+	lowMessage := strings.ToLower(message)
+	if strings.HasPrefix(lowMessage, GgPrefix) {
 		msgSl := strings.Fields(message)
-		bgg.say(checkCMD(userName, channel, msgSl[0], "GG", message), channel)
+		bgg.say(checkCMD(userName, channel, msgSl[0], GG, lowMessage, message), channel)
 	}
 	time.Sleep(10 * time.Millisecond)
 	return nil

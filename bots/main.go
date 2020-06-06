@@ -3,17 +3,19 @@ package bots
 import (
 	"bot/resource"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 )
 
 const TimeFormat = "2006.01.02 15:04"
-const TimeFormatReact = "2006.01.02 15:04:02"
 
 func timeStamp() string {
 	return time.Now().Format(TimeFormat)
 }
 
+const VERSION = `1.0.0`
+const cmdCOUNT = 24
 const TW = "TW"
 const GG = "GG"
 const DIS = "DIS"
@@ -47,7 +49,7 @@ func SingleDiscord() *BotDiscord {
 	return discord
 }
 
-func checkCMD(userName, channel, cmd, platform, message string) string {
+func checkCMD(userName, channel, cmd, platform, message, originMessage string) string {
 	var pr string
 	switch platform {
 	case TW:
@@ -66,7 +68,7 @@ func checkCMD(userName, channel, cmd, platform, message string) string {
 							if us == "all" || us == userName {
 								for _, cc := range cL.Command {
 									if pr+cc == cmd {
-										return handleCMD(userName, channel, cL.Request, platform, message)
+										return handleCMD(userName, channel, cL.Request, platform, message, originMessage)
 									}
 								}
 							}
@@ -79,8 +81,33 @@ func checkCMD(userName, channel, cmd, platform, message string) string {
 	return ""
 }
 
-func handleCMD(userName, channel, cmd, platform, message string) string {
+func handleCMD(userName, channel, cmd, platform, message, originMessage string) string {
 	switch cmd {
+	case "add quote":
+		msgSlice := strings.Fields(originMessage)
+		if len(msgSlice) < 2 {
+			return "Некорректный ввод"
+		} else {
+			quote := strings.TrimPrefix(originMessage, msgSlice[0])
+			resource.AddQuoteDB(quote)
+			return userName+", схоронила в бд: "+quote
+		}
+	case "get quote":
+		return resource.DBQuote()
+	case "live":
+		switch platform {
+		case TW:
+			d := time.Since(time.Unix(SingleTwitch().uptime, 0))
+			return userName + ", " + d.String()
+		case GG:
+			d := time.Since(time.Unix(SingleGoodGame().uptime, 0))
+			return userName + ", " + d.String()
+		case DIS:
+			d := time.Since(time.Unix(SingleDiscord().uptime, 0))
+			return userName + ", " + d.String()
+		}
+	case "VERSION":
+		return userName + ", " + VERSION
 	case "build":
 		return userName + ", " + resource.BuildAnswers[rand.Intn(resource.CountBuilds)]
 	case "eva":
@@ -95,20 +122,23 @@ func handleCMD(userName, channel, cmd, platform, message string) string {
 	case "help":
 		switch platform {
 		case TW:
-			return userName + ", Доступные комманды: build, eva, roll, bot, uptime, help, master help." +
-				" Используйте префикс - " + TwPrefix
+			return userName + ", Доступные комманды: build, eva, roll, bot, uptime, live, help, master help." +
+				"Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>, хранить можно даже ссылки." +
+				"Получить рандомну квоту из Бд - q или quote. Используйте префикс - " + TwPrefix
 		case GG:
-			return userName + ", Доступные комманды: build, eva, roll, bot, uptime (берет с твича), help." +
-				" Используйте префикс - " + GgPrefix
+			return userName + ", Доступные комманды: build, eva, roll, bot, uptime (берет с твича), live, help." +
+				"Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>, хранить можно даже ссылки." +
+				"Получить рандомну квоту из Бд - q или quote. Используйте префикс - " + GgPrefix
 		case DIS:
-			return userName + ", Доступные комманды: build, eva, roll, bot, help." +
-				" Используйте префикс - " + DisPrefix
+			return userName + ", Доступные комманды: build, eva, roll, bot, live, help." +
+				"Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>, хранить можно даже ссылки." +
+				"Получить рандомну квоту из Бд - q или quote. Используйте префикс - " + DisPrefix
 		}
 	case "master help":
 		switch platform {
 		case TW:
 			return userName + " Владелец бота либо канала может переключить активность бота коммандой !Ada, switch." +
-				" Реакции на всякое разное командой !Ada, switch reactTW. " +
+				" Реакции на всякое разное командой !Ada, switch react. " +
 				"Переключить отзыв на различные команды !Ada, switch cmd." +
 				" !Ada, set reactrate to <значение> выставляет настройку частоты реакции на различные сообщения в чате"
 		}
@@ -124,9 +154,10 @@ func handleCMD(userName, channel, cmd, platform, message string) string {
 	case "вырубайReflyq":
 		return SingleTwitch().handleReflyqCMD(userName, message, "вырубай")
 	case "helpReflyq":
-		return userName + ", Доступные комманды: build, eva, roll, bot, uptime, help, master help." +
+		return userName + ", Доступные комманды: build, eva, roll, bot, uptime, live, help, master help." +
 			" Уникальные на канале: вырубить, вырубай." +
-			" Используйте префикс - " + TwPrefix
+			"Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>, хранить можно даже ссылки." +
+			"Получить рандомну квоту из Бд - q или quote. Используйте префикс - " + TwPrefix
 	case "вырубайBlind":
 		return SingleTwitch().handleBlindCMD(userName, message, "вырубай")
 	case "чезаигра":
@@ -146,9 +177,10 @@ func handleCMD(userName, channel, cmd, platform, message string) string {
 	case "дискорд":
 		return SingleTwitch().handleBlindCMD(userName, message, cmd)
 	case "helpBlind":
-		return userName + ", Доступные комманды: build, eva, roll, bot, uptime, help, master help." +
+		return userName + ", Доступные комманды: build, eva, roll, bot, uptime, live, help, master help." +
 			" Уникальные на канале: чезаигра, скиллуха, вырубай, билд, вызватьсанитаров, труба, тыктоблять, дискорд." +
-			" Используйте префикс - " + TwPrefix
+			"Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>, хранить можно даже ссылки." +
+			"Получить рандомну квоту из Бд - q или quote. Используйте префикс - " + TwPrefix
 	}
 	return "Ашибка (handleCMD)"
 }
@@ -172,50 +204,58 @@ var reactGG = map[string]string{
 	"+ в чат": "+",
 }
 
-var CMDList = [20]resource.Commands{
-	{Command: []string{"вырубить"}, Platform: []string{TW}, Channels: []string{"reflyq"}, Users: []string{"all"},
-		Request: "вырубить"},
-	{Command: []string{"вырубай"}, Platform: []string{TW}, Channels: []string{"reflyq"}, Users: []string{"all"},
-		Request: "вырубайReflyq"},
-	{Command: []string{"help", "h", "помощь", "п"},
-		Platform: []string{"all"}, Channels: []string{"reflyq"}, Users: []string{"all"},
-		Request: "helpReflyq"},
+var CMDList = [cmdCOUNT]resource.Commands{
+	//Reflyq
+	{Command: []string{"вырубить"}, Platform: []string{TW}, Channels: []string{"reflyq"},
+		Users: []string{"all"}, Request: "вырубить"},
+	{Command: []string{"вырубай"}, Platform: []string{TW}, Channels: []string{"reflyq"},
+		Users: []string{"all"}, Request: "вырубайReflyq"},
+	{Command: []string{"help", "h", "помощь", "п"}, Platform: []string{TW}, Channels: []string{"reflyq"},
+		Users: []string{"all"}, Request: "helpReflyq"},
 
-	{Command: []string{"чезаигра"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"}, Users: []string{"all"},
-		Request: "чезаигра"},
-	{Command: []string{"скиллуха"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"}, Users: []string{"all"},
-		Request: "скиллуха"},
-	{Command: []string{"вызватьсанитаров"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"}, Users: []string{"all"},
-		Request: "вызватьсанитаров"},
-	{Command: []string{"труба", "youtube"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"}, Users: []string{"all"},
-		Request: "труба"},
-	{Command: []string{"тыктоблять"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"}, Users: []string{"all"},
-		Request: "тыктоблять"},
-	{Command: []string{"дискорд", "discord"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"}, Users: []string{"all"},
-		Request: "дискорд"},
-	{Command: []string{"вырубай"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"}, Users: []string{"all"},
-		Request: "вырубайBlind"},
-	{Command: []string{"build", "билд", "билдец"}, Platform: []string{"all"}, Channels: []string{"blindwalkerboy"}, Users: []string{"all"},
-		Request: "buildBlind"},
-	{Command: []string{"help", "h", "помощь", "п"},
-		Platform: []string{"all"}, Channels: []string{"blindwalkerboy"}, Users: []string{"all"},
-		Request: "helpBlind"},
+	//Blind
+	{Command: []string{"чезаигра"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"},
+		Users: []string{"all"}, Request: "чезаигра"},
+	{Command: []string{"скиллуха"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"},
+		Users: []string{"all"}, Request: "скиллуха"},
+	{Command: []string{"вызватьсанитаров"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"},
+		Users: []string{"all"}, Request: "вызватьсанитаров"},
+	{Command: []string{"труба", "youtube"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"},
+		Users: []string{"all"}, Request: "труба"},
+	{Command: []string{"тыктоблять"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"},
+		Users: []string{"all"}, Request: "тыктоблять"},
+	{Command: []string{"дискорд", "discord"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"},
+		Users: []string{"all"}, Request: "дискорд"},
+	{Command: []string{"вырубай"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"},
+		Users: []string{"all"}, Request: "вырубайBlind"},
+	{Command: []string{"build", "билд", "билдец"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"},
+		Users: []string{"all"}, Request: "buildBlind"},
+	{Command: []string{"help", "h", "помощь", "п"}, Platform: []string{TW}, Channels: []string{"blindwalkerboy"},
+		Users: []string{"all"}, Request: "helpBlind"},
 
-	{Command: []string{"build", "билд", "билдец"}, Platform: []string{"all"}, Channels: []string{"all"}, Users: []string{"all"},
-		Request: "build"},
-	{Command: []string{"eva", "ева"}, Platform: []string{"all"}, Channels: []string{"all"}, Users: []string{"all"},
-		Request: "eva"},
-	{Command: []string{"roll", "ролл"}, Platform: []string{"all"}, Channels: []string{"all"}, Users: []string{"all"},
-		Request: "roll"},
-	{Command: []string{"ping", "pong"}, Platform: []string{"all"}, Channels: []string{"all"}, Users: []string{"all"},
-		Request: "pong"},
-	{Command: []string{"bot", "бот"}, Platform: []string{"all"}, Channels: []string{"all"}, Users: []string{"all"},
-		Request: "bot"},
-	{Command: []string{"help", "h", "помощь", "п"},
-		Platform: []string{"all"}, Channels: []string{"all"}, Users: []string{"all"},
-		Request: "help"},
-	{Command: []string{"master help", "mh"}, Platform: []string{"all"}, Channels: []string{"all"}, Users: []string{"all"},
-		Request: "master help"},
-	{Command: []string{"uptime", "аптайм"}, Platform: []string{GG, TW}, Channels: []string{"all"}, Users: []string{"all"},
-		Request: "uptime"},
+	//All
+	{Command: []string{"build", "билд", "билдец"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "build"},
+	{Command: []string{"eva", "ева"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "eva"},
+	{Command: []string{"roll", "ролл"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "roll"},
+	{Command: []string{"ping", "pong"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "pong"},
+	{Command: []string{"bot", "бот"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "bot"},
+	{Command: []string{"help", "h", "помощь", "п"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "help"},
+	{Command: []string{"master help", "mh"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "master help"},
+	{Command: []string{"uptime", "аптайм"}, Platform: []string{GG, TW}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "uptime"},
+	{Command: []string{"live", "жива"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "live"},
+	{Command: []string{"v", "VERSION", "версия"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "VERSION"},
+	{Command: []string{"aq", "addquote"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "add quote"},
+	{Command: []string{"q", "quote"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "get quote"},
 }

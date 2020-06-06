@@ -50,22 +50,31 @@ func (bt *BotTwitch) handleChat() error {
 	if strings.Contains(message, "револьвер выстреливает!") && userName == "moobot" {
 		bt.say(bt.resurrected(message, channel), channel)
 	}
-	message = strings.ToLower(message)
-	if strings.HasPrefix(message, TwPrefix) {
+	lowMessage := strings.ToLower(message)
+	if strings.HasPrefix(lowMessage, TwPrefix) {
 		if _, ok := bt.Settings[channel]; ok {
 			if bt.Settings[channel].CMDStatus {
-				msgSl := strings.Fields(message)
-				go bt.say(checkCMD(userName, channel, msgSl[0], "TW", message), channel)
+				msgSl := strings.Fields(lowMessage)
+				go bt.say(checkCMD(userName, channel, msgSl[0], TW, lowMessage, message), channel)
 			}
 		}
 	}
 	time.Sleep(10 * time.Millisecond)
 	return nil
 }
+
 func (bt *BotTwitch) writeLog(userName, channel, message string) {
-	if message != "" && !strings.Contains(userName, bt.BotName+".tmi.Twitch.tv 353") &&
-		!strings.Contains(userName, bt.BotName+".tmi.Twitch.tv 366") {
-		_, err := bt.FileChannelLog[channel].WriteString("[" + timeStamp() + "] Канал:" + channel +
+	if message != "" &&
+		!strings.Contains(userName, `tmi.twitch.tv 353`) &&
+		!strings.Contains(userName, `tmi.twitch.tv 366`) &&
+		!strings.Contains(userName, `tmi.twitch.tv 001`) &&
+		!strings.Contains(userName, `tmi.twitch.tv 002`) &&
+		!strings.Contains(userName, `tmi.twitch.tv 003`) &&
+		!strings.Contains(userName, `tmi.twitch.tv 004`) &&
+		!strings.Contains(userName, `tmi.twitch.tv 376`) &&
+		!strings.Contains(userName, `tmi.twitch.tv 372`) &&
+		!strings.Contains(userName, `tmi.twitch.tv 372`) {
+		_, err := bt.FileChannelLog[channel].WriteString("[" + timeStamp() + "] [TWITCH] Канал:" + channel +
 			" Ник:" + userName + "\tСообщение:" + message + "\n")
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -76,21 +85,20 @@ func (bt *BotTwitch) writeLog(userName, channel, message string) {
 				"error":    err,
 			}).Errorln("Ошибка записи лога.")
 		}
-		log.Infof("Ник: %s Канал: %s Сообщение: %s\n", userName, channel, message)
-		//fmt.Print("[" + timeStamp() + "] Канал:" + channel +
-		//	"\tНик:" + userName + "\tСообщение:" + message + "\n")
+		fmt.Print("[" + timeStamp() + "] [TWITCH] Канал:" + channel + " " +
+			"Ник:" + userName + "\tСообщение:" + message + "\n")
 	}
 }
 
 func (bt *BotTwitch) checkReact(channel, message string) {
 	if _, ok := bt.Settings[channel]; ok {
 		if bt.Settings[channel].ReactStatus &&
-			(time.Now().Unix()-bt.Settings[channel].ReactRate.Unix() >=
-				int64(bt.Settings[channel].ReactTime)) {
+			(time.Now().Unix()-bt.Settings[channel].LastReactTime >=
+				int64(bt.Settings[channel].ReactRate)) {
 			for key := range reactTW {
 				if strings.Contains(message, key) {
-					bt.Settings[channel].ReactRate = time.Now()
-					go bt.saveSettings(channel)
+					bt.Settings[channel].LastReactTime = time.Now().Unix()
+					go bt.saveChannelSettings(channel)
 					bt.say(reactTW[key], channel)
 					break
 				}
@@ -101,30 +109,30 @@ func (bt *BotTwitch) checkReact(channel, message string) {
 
 func (bt *BotTwitch) handleMasterCmd(message, channel string) {
 	switch {
+	case strings.HasPrefix(message, "!Ada, switch react"):
+		switch bt.Settings[channel].ReactStatus {
+		case true:
+			bt.Settings[channel].ReactStatus = false
+			bt.say("Больше никаких приветов?", channel)
+			bt.saveChannelSettings(channel)
+			return
+		case false:
+			bt.Settings[channel].ReactStatus = true
+			bt.say("00101!", channel)
+			bt.saveChannelSettings(channel)
+			return
+		}
 	case strings.HasPrefix(message, "!Ada, switch"):
 		switch bt.Settings[channel].Status {
 		case true:
 			bt.Settings[channel].Status = false
 			bt.say("Засыпаю...", channel)
-			bt.saveSettings(channel)
+			bt.saveChannelSettings(channel)
 			return
 		case false:
 			bt.Settings[channel].Status = true
 			bt.say("Проснулись, улыбнулись!", channel)
-			bt.saveSettings(channel)
-			return
-		}
-	case strings.HasPrefix(message, "!Ada, switch reactTW"):
-		switch bt.Settings[channel].ReactStatus {
-		case true:
-			bt.Settings[channel].ReactStatus = false
-			bt.say("Больше никаких приветов?", channel)
-			bt.saveSettings(channel)
-			return
-		case false:
-			bt.Settings[channel].ReactStatus = true
-			bt.say("00101!", channel)
-			bt.saveSettings(channel)
+			bt.saveChannelSettings(channel)
 			return
 		}
 	case strings.HasPrefix(message, "!Ada, switch cmd"):
@@ -132,12 +140,12 @@ func (bt *BotTwitch) handleMasterCmd(message, channel string) {
 		case true:
 			bt.Settings[channel].CMDStatus = false
 			bt.say("No !roll's for you", channel)
-			bt.saveSettings(channel)
+			bt.saveChannelSettings(channel)
 			return
 		case false:
 			bt.Settings[channel].CMDStatus = true
 			bt.say("!roll?", channel)
-			bt.saveSettings(channel)
+			bt.saveChannelSettings(channel)
 			return
 		}
 	case strings.HasPrefix(message, "!Ada, show settings"):
@@ -165,8 +173,8 @@ func (bt *BotTwitch) handleMasterCmd(message, channel string) {
 			} else {
 				return "False"
 			}
-		}()+" Last reactTW time: "+bt.Settings[channel].ReactRate.Format(TimeFormatReact)+
-			" React rate time: "+strconv.Itoa(bt.Settings[channel].ReactTime), channel)
+		}()+" Last react time: "+time.Unix(bt.Settings[channel].LastReactTime, 0).String()+
+			" React rate time: "+strconv.Itoa(bt.Settings[channel].ReactRate), channel)
 		return
 	case strings.HasPrefix(message, "!Ada, set reactrate to"):
 		tempstr := strings.Fields(message)
@@ -177,54 +185,12 @@ func (bt *BotTwitch) handleMasterCmd(message, channel string) {
 			if err != nil {
 				bt.say("Некорректный ввод", channel)
 			} else {
-				bt.Settings[channel].ReactTime, _ = strconv.Atoi(tempstr[4])
-				go bt.saveSettings(channel)
+				bt.Settings[channel].ReactRate, _ = strconv.Atoi(tempstr[4])
+				go bt.saveChannelSettings(channel)
 				bt.say("Частота реакции установлена на раз в "+
-					strconv.Itoa(bt.Settings[channel].ReactTime)+" секунд.", channel)
+					strconv.Itoa(bt.Settings[channel].ReactRate)+" секунд.", channel)
 				return
 			}
-		}
-	case strings.HasPrefix(message, "!Ada, set points"):
-		tempstr := strings.Fields(message)
-		if len(tempstr) < 6 {
-			bt.say("Некорректный ввод", channel)
-		} else {
-			_, err := strconv.Atoi(tempstr[5])
-			if err != nil {
-				bt.say("Некорректный ввод", channel)
-			} else {
-				tempstr[3] = strings.TrimPrefix(tempstr[3], "@")
-				tempstr[3] = strings.ToLower(tempstr[3])
-				for _, viewer := range bt.Viewers[channel].Viewers {
-					if viewer.Name == tempstr[3] {
-						viewer.Points, _ = strconv.Atoi(tempstr[5])
-						go bt.saveViewersData(channel)
-						bt.say("Поинты "+viewer.Name+" установлены в "+tempstr[5], channel)
-						return
-					}
-				}
-				bt.say("Не нашла зрителя в базе, попробуйте позже ", channel)
-				go bt.saveViewersData(channel)
-				return
-			}
-		}
-	case strings.HasPrefix(message, "!Ada, show points"):
-		tempstr := strings.Fields(message)
-		if len(tempstr) < 4 {
-			bt.say("Некорректный ввод", channel)
-		} else {
-			tempstr[3] = strings.TrimPrefix(tempstr[3], "@")
-			tempstr[3] = strings.ToLower(tempstr[3])
-			for _, viewer := range bt.Viewers[channel].Viewers {
-				if viewer.Name == tempstr[3] {
-					go bt.saveViewersData(channel)
-					bt.say("Поинты "+viewer.Name+" "+strconv.Itoa(viewer.Points), channel)
-					return
-				}
-			}
-			bt.say("Не нашла зрителя в базе, попробуйте позже ", channel)
-			go bt.saveViewersData(channel)
-			return
 		}
 	}
 }

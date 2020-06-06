@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/textproto"
 	"os"
-	"time"
 )
 
 type BotTwitch struct {
@@ -24,18 +23,18 @@ type BotTwitch struct {
 	MutedUsers          string
 	serverResponse      []byte
 	n                   int
+	uptime              int64
 	FileChannelLog      map[string]*os.File
 	Settings            map[string]*botSettings
-	Viewers             map[string]*viewersData
 }
 
 type botSettings struct {
-	Status      bool
-	ReactStatus bool
-	CMDStatus   bool
-	ReactRate   time.Time
-	ReactTime   int
-	IsModerator bool
+	Status        bool
+	ReactStatus   bool
+	CMDStatus     bool
+	ReactRate     int
+	LastReactTime int64
+	IsModerator   bool
 }
 
 type apiConfig struct {
@@ -46,13 +45,4 @@ type apiConfig struct {
 	ReflyToken string `json:"refly_token"`
 	Url        string
 	ChannelsID map[string]string
-}
-
-type viewersData struct {
-	Viewers []*viewer
-}
-
-type viewer struct {
-	Name   string
-	Points int
 }

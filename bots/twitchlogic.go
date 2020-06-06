@@ -3,6 +3,7 @@ package bots
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net"
@@ -34,236 +35,7 @@ func (bt *BotTwitch) initBot() {
 			"error":    err,
 		}).Fatalln("Ошибка конвертирования структуры из файла в структуру бота.")
 	}
-}
-
-func (bt *BotTwitch) initSettings() {
 	bt.Settings = make(map[string]*botSettings)
-	for _, channel := range bt.Channels {
-		bt.Settings[channel] = &botSettings{
-			Status:      true,
-			ReactStatus: true,
-			CMDStatus:   true,
-			ReactRate:   time.Now(),
-			ReactTime:   30,
-			IsModerator: false,
-		}
-		channelSettingsJsonFile, err := ioutil.ReadFile(
-			"logs/" + channel + " Channel/" + channel + " Settings.json")
-		if err != nil {
-			if strings.Contains(err.Error(), "The system cannot find the file specified.") {
-				log.WithFields(log.Fields{
-					"package":  "bots",
-					"function": "ioutil.ReadFile",
-					"file":     "twitchlogic.go",
-					"body":     "initSettings",
-					"error":    err,
-				}).Info("Ошибка открытия настроек.")
-				err = nil
-				_, err = os.Create("logs/" + channel + " Channel/" + channel + " Settings.json")
-				if err != nil {
-					log.WithFields(log.Fields{
-						"package":  "bots",
-						"function": "os.Create",
-						"file":     "twitchlogic.go",
-						"body":     "initSettings",
-						"error":    err,
-					}).Errorln("Ошибка создания файла для лога чата.")
-				}
-				channelSettingsJsonFile, err = ioutil.ReadFile(
-					"logs/" + channel + " Channel/" + channel + " Settings.json")
-				if err != nil {
-					log.WithFields(log.Fields{
-						"package":  "bots",
-						"function": "ioutil.ReadFile",
-						"file":     "twitchlogic.go",
-						"body":     "initSettings",
-						"error":    err,
-					}).Errorln("Ошибка открытия настроек.")
-				}
-				err = nil
-			}
-			log.WithFields(log.Fields{
-				"package":  "bots",
-				"function": "ioutil.ReadFile",
-				"file":     "twitchlogic.go",
-				"body":     "initSettings",
-				"error":    err,
-			}).Errorln("Ошибка чтения данных настроек канала.")
-		}
-		err = json.Unmarshal(channelSettingsJsonFile, bt.Settings[channel])
-		if err != nil {
-			log.WithFields(log.Fields{
-				"package":  "bots",
-				"function": "json.Unmarshal",
-				"file":     "twitchlogic.go",
-				"body":     "initSettings",
-				"error":    err,
-			}).Errorln("Ошибка конвертирования структуры из файла в структуру настроек.")
-		}
-		if bt.handleApiRequest("", channel, "", "!evaismod") == "true" {
-			bt.Settings[channel].IsModerator = true
-		} else {
-			bt.Settings[channel].IsModerator = false
-		}
-		bt.saveSettings(channel)
-	}
-}
-
-func (bt *BotTwitch) saveSettings(channel string) {
-	channelSettingsJson, err := json.MarshalIndent(*bt.Settings[channel], "", " ")
-	if err != nil {
-		log.WithFields(log.Fields{
-			"package":  "bots",
-			"function": "json.MarshalIndent",
-			"file":     "twitchlogic.go",
-			"body":     "saveSettings",
-			"error":    err,
-		}).Errorln("Ошибка маршал настроек в жисон.")
-	}
-	channelSettingsJsonFile, err := os.OpenFile(
-		"logs/"+channel+" Channel/"+channel+" Settings.json", os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"package":  "bots",
-			"function": "os.OpenFile",
-			"file":     "twitchlogic.go",
-			"body":     "saveSettings",
-			"error":    err,
-		}).Errorln("Не удалось создать \\ открыть файл.")
-	} else {
-		defer channelSettingsJsonFile.Close()
-	}
-	if channelSettingsJsonFile != nil {
-		_, err = channelSettingsJsonFile.Write(channelSettingsJson)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"package":  "bots",
-				"function": "channelSettingsJsonFile.Write",
-				"file":     "twitchlogic.go",
-				"body":     "saveSettings",
-				"error":    err,
-			}).Errorln("Не записать в файл.")
-		}
-	} else {
-		log.WithFields(log.Fields{
-			"package":                 "bots",
-			"function":                "channelSettingsJsonFile == nil",
-			"file":                    "twitchlogic.go",
-			"body":                    "saveSettings",
-			"error":                   err,
-			"channelSettingsJsonFile": channelSettingsJsonFile,
-		}).Errorln("Файл пуст.")
-	}
-}
-
-func (bt *BotTwitch) initViewersData() {
-	bt.Viewers = make(map[string]*viewersData)
-	for _, channel := range bt.Channels {
-		bt.Viewers[channel] = &viewersData{}
-		channelViwerFileJson, err := ioutil.ReadFile(
-			"logs/" + channel + " Channel/" + channel + " ViewersData.json")
-		if err != nil {
-			if strings.Contains(err.Error(), "The system cannot find the file specified.") {
-				log.WithFields(log.Fields{
-					"package":  "bots",
-					"function": "ioutil.ReadFile",
-					"file":     "twitchlogic.go",
-					"body":     "initViewersData",
-					"error":    err,
-				}).Errorln("Ошибка открытия json зрителей.")
-				err = nil
-				_, err = os.Create("logs/" + channel + " Channel/" + channel + " ViewersData.json")
-				if err != nil {
-					log.WithFields(log.Fields{
-						"package":  "bots",
-						"function": "os.Create",
-						"file":     "twitchlogic.go",
-						"body":     "initSettings",
-						"error":    err,
-					}).Errorln("Ошибка создания файла для зрителей.")
-					err = nil
-				}
-				channelViwerFileJson, err = ioutil.ReadFile(
-					"logs/" + channel + " Channel/" + channel + " ViewersData.json")
-				if err != nil {
-					log.WithFields(log.Fields{
-						"package":  "bots",
-						"function": "ioutil.ReadFile",
-						"file":     "twitchlogic.go",
-						"body":     "initSettings",
-						"error":    err,
-					}).Errorln("Ошибка открытия json зрителей после создания.")
-					err = nil
-				}
-			}
-			log.WithFields(log.Fields{
-				"package":  "bots",
-				"function": "ioutil.ReadFile",
-				"file":     "twitchlogic.go",
-				"body":     "initSettings",
-				"error":    err,
-			}).Errorln("Ошибка чтения данных зрителей канала в конце.")
-		}
-		err = json.Unmarshal(channelViwerFileJson, &bt.Viewers[channel].Viewers)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"package":  "bots",
-				"function": "json.Unmarshal",
-				"file":     "twitchlogic.go",
-				"body":     "initSettings",
-				"error":    err,
-			}).Errorln("Ошибка конвертирования структуры из файла в структуру зрителей.")
-		}
-		bt.saveViewersData(channel)
-	}
-}
-
-func (bt *BotTwitch) saveViewersData(channel string) {
-	bt.handleApiRequest("", channel, "", "requestallviewers")
-	channelViewerJson, err := json.MarshalIndent(&bt.Viewers[channel].Viewers, "", " ")
-	if err != nil {
-		log.WithFields(log.Fields{
-			"package":  "bots",
-			"function": "json.MarshalIndent",
-			"file":     "twitchlogic.go",
-			"body":     "saveViewersData",
-			"error":    err,
-		}).Errorln("Ошибка маршал настроек в жисон зрителей.")
-	}
-	channelViewersFileJson, err := os.OpenFile(
-		"logs/"+channel+" Channel/"+channel+" ViewersData.json", os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"package":  "bots",
-			"function": "os.OpenFile",
-			"file":     "twitchlogic.go",
-			"body":     "saveViewersData",
-			"error":    err,
-		}).Errorln("Не удалось создать \\ открыть файл.")
-	} else {
-		defer channelViewersFileJson.Close()
-	}
-	if channelViewersFileJson != nil {
-		_, err = channelViewersFileJson.Write(channelViewerJson)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"package":  "bots",
-				"function": "channelSettingsJsonFile.Write",
-				"file":     "twitchlogic.go",
-				"body":     "saveSettings",
-				"error":    err,
-			}).Errorln("Не записать в файл.")
-		}
-	} else {
-		log.WithFields(log.Fields{
-			"package":                "bots",
-			"function":               "channelViewersFileJson == nil",
-			"file":                   "twitchlogic.go",
-			"body":                   "saveSettings",
-			"error":                  err,
-			"channelViewersFileJson": channelViewersFileJson,
-		}).Errorln("Файл пуст.")
-	}
 }
 
 func (bt *BotTwitch) openChannelLog() {
@@ -308,7 +80,6 @@ func (bt *BotTwitch) Start() {
 	var err error
 	bt.initBot()
 	go bt.initApiConfig()
-	go bt.initViewersData()
 	for {
 		bt.connect()
 		err = bt.joinChannels()
@@ -317,6 +88,7 @@ func (bt *BotTwitch) Start() {
 			continue
 		}
 		bt.ReadChannels = textproto.NewReader(bufio.NewReader(bt.Connection))
+		bt.uptime = time.Now().Unix()
 		err = bt.listenChannels()
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -387,7 +159,7 @@ func (bt *BotTwitch) joinChannels() error {
 func (bt *BotTwitch) listenChannels() error {
 	var err error
 	bt.openChannelLog()
-	bt.initSettings()
+	bt.initChannelSettings()
 	for _, channelFile := range bt.FileChannelLog {
 		defer channelFile.Close()
 	}
@@ -428,7 +200,7 @@ func (bt *BotTwitch) say(msg, channel string) {
 			"error":    err,
 		}).Errorln("Ошибка отправки сообщения.")
 	}
-	_, err = bt.FileChannelLog[channel].WriteString("[" + timeStamp() + "] Канал:" + channel +
+	_, err = bt.FileChannelLog[channel].WriteString("[" + timeStamp() + "] [TWITCH] Канал:" + channel +
 		" Ник:" + bt.BotName + "\tСообщение:" + msg + "\n")
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -439,6 +211,5 @@ func (bt *BotTwitch) say(msg, channel string) {
 			"error":    err,
 		}).Errorln("Ошибка записи лога.")
 	}
-	log.Infoln("Канал:" + channel + "\tНик:" + bt.BotName + "\tСообщение:" + msg)
-	//fmt.Println("[" + timeStamp() + "] Канал:" + channel + "\tНик:" + bt.BotName + "\tСообщение:" + msg + "\n")
+	fmt.Print("[" + timeStamp() + "] [TWITCH] Канал:" + channel + " Ник:" + bt.BotName + "\tСообщение:" + msg + "\n")
 }

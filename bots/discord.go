@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 )
 
 type BotDiscord struct {
@@ -15,6 +16,7 @@ type BotDiscord struct {
 	GoodGamePtr *BotGoodGame
 	Session     *discordgo.Session
 	token       string
+	uptime      int64
 }
 
 func (db *BotDiscord) Start() {
@@ -43,6 +45,7 @@ func (db *BotDiscord) Start() {
 		return
 	}
 	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
+	db.uptime = time.Now().Unix()
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
@@ -50,14 +53,15 @@ func (db *BotDiscord) Start() {
 }
 
 func (db *BotDiscord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	fmt.Println("Дискорд Сервер:<#"+m.GuildID+"> Канал:<#"+m.ChannelID+"> Юзер:", m.Author, "Сообщение:", m.Content)
+	fmt.Println("["+timeStamp()+"] [DISCORD] Сервер:"+m.GuildID+" Канал:"+m.ChannelID+" Ник:",
+		m.Author, " Сообщение:", m.Content)
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	message := strings.ToLower(m.Content)
-	if strings.HasPrefix(message, DisPrefix) {
-		msgSl := strings.Fields(message)
-		_, err := s.ChannelMessageSend(m.ChannelID, checkCMD("<@"+m.Author.ID+">", m.ChannelID, msgSl[0], "DIS", message))
+	lowMessage := strings.ToLower(m.Content)
+	if strings.HasPrefix(lowMessage, DisPrefix) {
+		msgSl := strings.Fields(lowMessage)
+		_, err := s.ChannelMessageSend(m.ChannelID, checkCMD("<@"+m.Author.ID+">", m.ChannelID, msgSl[0], "DIS", lowMessage, m.Content))
 		if err != nil {
 			log.WithFields(log.Fields{
 				"package":  "bots",
