@@ -14,7 +14,7 @@ func timeStamp() string {
 	return time.Now().Format(TimeFormat)
 }
 
-const VERSION = `1.0.1`
+const VERSION = `1.1.0`
 const cmdCOUNT = 24
 const TW = "TW"
 const GG = "GG"
@@ -90,7 +90,7 @@ func handleCMD(userName, channel, cmd, platform, message, originMessage string) 
 		} else {
 			quote := strings.TrimPrefix(originMessage, msgSlice[0])
 			resource.AddQuoteDB(quote)
-			return userName+", схоронила в бд: "+quote
+			return userName + ", схоронила в бд: " + quote
 		}
 	case "get quote":
 		return resource.DBQuote()

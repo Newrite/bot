@@ -2,9 +2,13 @@ package bots
 
 import (
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 )
+
+const inMuteTime int = 30
+const useMuteTime int = 180
 
 var channelRflyq string = "reflyq"
 
@@ -31,6 +35,9 @@ func (bt *BotTwitch) handleReflyqCMD(userName, message, cmd string) string {
 		userOffensive := bt.handleApiRequest(userName, channelRflyq, message, "userstate")
 		userDeffensive := bt.handleApiRequest(tempStrSlice[1], channelRflyq, message, "userstate")
 		switch bt.handleExeption(userName, tempStrSlice[1], userOffensive, userDeffensive) {
+		case "killer":
+			bt.say("/timeout @"+tempStrSlice[1]+" 10", channelRflyq)
+			return "Камень бьет ножницы, а я бью твое ебало спамер, НЫА"
 		case "streamerDeff":
 			return "У стримера бесплотность с капом отката на крики roflanEbalo"
 		case "killed":
@@ -38,10 +45,10 @@ func (bt *BotTwitch) handleReflyqCMD(userName, message, cmd string) string {
 		case "modOff":
 			return userName + ", ты что забыл свой банхаммер дома? monkaHmm"
 		case "modDeff":
-			return "@" + userName + " Agakakskagesh Agakakskagesh Agakakskagesh"
+			return userName + ", Agakakskagesh Agakakskagesh Agakakskagesh"
 		case "reflyqkiller":
-			go bt.addRemoveMutedUsers(tempStrSlice[1], 120)
-			bt.say("/timeout @"+tempStrSlice[1]+" 120", channelRflyq)
+			go bt.userInMuteFunc(tempStrSlice[1], 120)
+			bt.say("/timeout @"+tempStrSlice[1]+" "+strconv.Itoa(inMuteTime), channelRflyq)
 			return "Reflyq произносит YOL TooR Shul и испепеляет " + tempStrSlice[1] + " monkaX"
 		case "shiza":
 			return "Осуждаю roflanEbalo"
@@ -163,35 +170,36 @@ func (bt *BotTwitch) handleReflyqCMD(userName, message, cmd string) string {
 }
 
 func (bt *BotTwitch) reflyqAnswer(offUser, deffUser, channel string, victory bool) string {
+	go bt.userUseMuteFunc(offUser, time.Duration(useMuteTime))
 	if victory {
 		switch rand.Intn(6) {
 		case 0:
-			go bt.addRemoveMutedUsers(deffUser, 120)
-			bt.say("/timeout @"+deffUser+" 120", channel)
+			go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
+			bt.say("/timeout @"+deffUser+" "+strconv.Itoa(inMuteTime), channel)
 			return offUser + " запускает фаербол в ничего не подозревающего " + deffUser + " и он сгорает дотла.."
 		case 1:
-			go bt.addRemoveMutedUsers(deffUser, 120)
-			bt.say("/timeout @"+deffUser+" 120", channel)
+			go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
+			bt.say("/timeout @"+deffUser+" "+strconv.Itoa(inMuteTime), channel)
 			return offUser + " подчиняет волю " + deffUser + " с помощью иллюзии, теперь он может делать с ним," +
 				" что хочет gachiBASS"
 		case 2:
-			go bt.addRemoveMutedUsers(offUser, 120)
-			go bt.addRemoveMutedUsers(deffUser, 120)
-			bt.say("/timeout @"+offUser+" 120", channel)
-			bt.say("/timeout @"+deffUser+" 120", channel)
+			go bt.userInMuteFunc(offUser, time.Duration(inMuteTime))
+			go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
+			bt.say("/timeout @"+offUser+" "+strconv.Itoa(inMuteTime), channel)
+			bt.say("/timeout @"+deffUser+" "+strconv.Itoa(inMuteTime), channel)
 			return offUser + " с разбега совершает сокрушительный удар по черепушке " + deffUser + ", кто же знал," +
 				" что " + deffUser + " решит надеть колечко малого отражения roflanEbalo"
 		case 3:
-			go bt.addRemoveMutedUsers(deffUser, 120)
-			bt.say("/timeout @"+deffUser+" 120", channel)
+			go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
+			bt.say("/timeout @"+deffUser+" "+strconv.Itoa(inMuteTime), channel)
 			return offUser + " подкравшись к " + deffUser + " перерезает его горло, всё было тихо, ни шума ни крика.."
 		case 4:
-			go bt.addRemoveMutedUsers(deffUser, 120)
-			bt.say("/timeout @"+deffUser+" 120", channel)
+			go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
+			bt.say("/timeout @"+deffUser+" "+strconv.Itoa(inMuteTime), channel)
 			return offUser + " подкидывает яд в карманы " + deffUser + ", страшная смерть.."
 		case 5:
-			go bt.addRemoveMutedUsers(deffUser, 120)
-			bt.say("/timeout @"+deffUser+" 120", channel)
+			go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
+			bt.say("/timeout @"+deffUser+" "+strconv.Itoa(inMuteTime), channel)
 			return offUser + " взламывает жопу " + deffUser + ", теперь он в его полном распоряжении gachiHYPER"
 		default:
 			return ""
@@ -204,28 +212,28 @@ func (bt *BotTwitch) reflyqAnswer(offUser, deffUser, channel string, victory boo
 		case 1:
 			return offUser + " пытается поразить " + deffUser + " молнией, но кап абсорба говорит - НЕТ! EZ"
 		case 2:
-			go bt.addRemoveMutedUsers(offUser, 120)
-			bt.say("/timeout @"+offUser+" 120", channel)
+			go bt.userInMuteFunc(offUser, time.Duration(inMuteTime))
+			bt.say("/timeout @"+offUser+" "+strconv.Itoa(inMuteTime), channel)
 			return offUser + " запускает фаербол в  " + deffUser + ", но он успевает защититься зеркалом Шалидора" +
 				" и вы погибаете.."
 		case 3:
 			return offUser + " стреляет из лука в " + deffUser + ", 1ое попадание, 2ое, 3ье, 10ое.. но " + deffUser + "" +
 				" всё еще жив, а хули ты хотел от луков? roflanEbalo"
 		case 4:
-			go bt.addRemoveMutedUsers(offUser, 120)
-			bt.say("/timeout @"+offUser+" 120", channel)
+			go bt.userInMuteFunc(offUser, time.Duration(inMuteTime))
+			bt.say("/timeout @"+offUser+" "+strconv.Itoa(inMuteTime), channel)
 			return offUser + " завидев " + deffUser + " хорошенько разбегается, чтобы нанести удар и вдруг.. падает" +
 				" без сил так и не добежав до " + deffUser + ", а вот нехуй альтмером в тяже играть roflanEbalo"
 		case 5:
-			go bt.addRemoveMutedUsers(offUser, 120)
-			go bt.addRemoveMutedUsers(deffUser, 120)
-			bt.say("/timeout @"+offUser+" 120", channel)
-			bt.say("/timeout @"+deffUser+" 120", channel)
+			go bt.userInMuteFunc(offUser, time.Duration(inMuteTime))
+			go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
+			bt.say("/timeout @"+offUser+" "+strconv.Itoa(inMuteTime), channel)
+			bt.say("/timeout @"+deffUser+" "+strconv.Itoa(inMuteTime), channel)
 			return offUser + " подкрадывается к " + deffUser + ", но вдруг из ниоткуда появившийся медведь" +
 				" убивает их обоих roflanEbalo"
 		case 6:
-			go bt.addRemoveMutedUsers(offUser, 120)
-			bt.say("/timeout @"+offUser+" 120", channel)
+			go bt.userInMuteFunc(offUser, time.Duration(inMuteTime))
+			bt.say("/timeout @"+offUser+" "+strconv.Itoa(inMuteTime), channel)
 			return offUser + " пытается подкрасться к " + deffUser + ", но вдруг - вас заметили roflanEbalo"
 		default:
 			return ""
@@ -233,20 +241,29 @@ func (bt *BotTwitch) reflyqAnswer(offUser, deffUser, channel string, victory boo
 	}
 }
 
-func (bt *BotTwitch) addRemoveMutedUsers(user string, duration time.Duration) {
-	bt.MutedUsers += user
+func (bt *BotTwitch) userInMuteFunc(user string, duration time.Duration) {
+	bt.UsersInMute += user
 	time.Sleep(duration * time.Second)
-	bt.MutedUsers = strings.Replace(bt.MutedUsers, user, "", -1)
+	bt.UsersInMute = strings.Replace(bt.UsersInMute, user, "", -1)
+}
+
+func (bt *BotTwitch) userUseMuteFunc(user string, duration time.Duration) {
+	bt.UsersUseMute += user
+	time.Sleep(duration * time.Second)
+	bt.UsersUseMute = strings.Replace(bt.UsersUseMute, user, "", -1)
 }
 
 func (bt *BotTwitch) handleExeption(userOff, userDeff, userOffStatus, userDeffStatus string) string {
+	if strings.Contains(bt.UsersUseMute, userOff) {
+		return "killer"
+	}
 	if userOff == userDeff {
 		return "shiza"
 	}
 	if userDeff == channelRflyq {
 		return "streamerDeff"
 	}
-	if strings.Contains(bt.MutedUsers, userDeff) {
+	if strings.Contains(bt.UsersInMute, userDeff) {
 		return "killed"
 	}
 	if userOff == channelRflyq {
