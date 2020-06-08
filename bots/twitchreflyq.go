@@ -38,7 +38,7 @@ func (bt *BotTwitch) handleReflyqCMD(userName, message, cmd string) string {
 		case "modOff":
 			return userName + ", ты что забыл свой банхаммер дома? monkaHmm"
 		case "modDeff":
-			return "@" + tempStrSlice[1] + " Agakakskagesh Agakakskagesh Agakakskagesh"
+			return "@" + userName + " Agakakskagesh Agakakskagesh Agakakskagesh"
 		case "reflyqkiller":
 			go bt.addRemoveMutedUsers(tempStrSlice[1], 120)
 			bt.say("/timeout @"+tempStrSlice[1]+" 120", channelRflyq)

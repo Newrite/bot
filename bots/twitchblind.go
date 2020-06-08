@@ -8,11 +8,11 @@ var channelBlinde string = "blindwalkerboy"
 
 func (bt *BotTwitch) sendBlindRepeatMessage() {
 	for {
+		time.Sleep(15 * time.Minute)
 		if bt.handleApiRequest("", channelBlinde, "", "streamStatus") == "online" {
 			bt.say("Привет, дружище! Приглашаю тебя в лучшее сообщество по Requiem"+
 				" и ламповое убежище для настоящих мужчин - https://discord.GG/4yqdafW", channelBlinde)
 		}
-		time.Sleep(15 * time.Minute)
 	}
 }
 
