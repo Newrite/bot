@@ -83,6 +83,8 @@ func checkCMD(userName, channel, cmd, platform, message, originMessage string) s
 
 func handleCMD(userName, channel, cmd, platform, message, originMessage string) string {
 	switch cmd {
+	case "ping":
+		return userName + ", pong!"
 	case "add quote":
 		msgSlice := strings.Fields(originMessage)
 		if len(msgSlice) < 2 {
@@ -240,8 +242,8 @@ var CMDList = [cmdCOUNT]resource.Commands{
 		Users: []string{"all"}, Request: "eva"},
 	{Command: []string{"roll", "ролл"}, Platform: []string{"all"}, Channels: []string{"all"},
 		Users: []string{"all"}, Request: "roll"},
-	{Command: []string{"ping", "pong"}, Platform: []string{"all"}, Channels: []string{"all"},
-		Users: []string{"all"}, Request: "pong"},
+	{Command: []string{"ping", "пинг"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "ping"},
 	{Command: []string{"bot", "бот"}, Platform: []string{"all"}, Channels: []string{"all"},
 		Users: []string{"all"}, Request: "bot"},
 	{Command: []string{"help", "h", "помощь", "п"}, Platform: []string{"all"}, Channels: []string{"all"},

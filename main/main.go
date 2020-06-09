@@ -9,7 +9,7 @@ import (
 
 func main() {
 	rand.Seed(time.Now().Unix())
-		go bots.SingleTwitch().Start()
-		go bots.SingleGoodGame().Start()
-		bots.SingleDiscord().Start()
+	go bots.SingleTwitch().Start()
+	go bots.SingleGoodGame().Start()
+	bots.SingleDiscord().Start()
 }

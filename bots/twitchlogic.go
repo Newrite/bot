@@ -79,6 +79,7 @@ func (bt *BotTwitch) openChannelLog() {
 func (bt *BotTwitch) Start() {
 	var err error
 	bt.initBot()
+	go bt.sendBlindRepeatMessage()
 	go bt.initApiConfig()
 	for {
 		bt.connect()
@@ -128,6 +129,7 @@ func (bt *BotTwitch) joinChannels() error {
 	var err error
 	_, err = bt.Connection.Write([]byte("PASS " + bt.OAuth + "\r\n"))
 	_, err = bt.Connection.Write([]byte("NICK " + bt.BotName + "\r\n"))
+	//_, err = bt.Connection.Write([]byte("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership"))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"package":  "bots",
@@ -163,7 +165,6 @@ func (bt *BotTwitch) listenChannels() error {
 	for _, channelFile := range bt.FileChannelLog {
 		defer channelFile.Close()
 	}
-	go bt.sendBlindRepeatMessage()
 	//go bt.startPubSub()
 	for {
 		if err = bt.handleChat(); err != nil {

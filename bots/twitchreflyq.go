@@ -36,8 +36,8 @@ func (bt *BotTwitch) handleReflyqCMD(userName, message, cmd string) string {
 		userDeffensive := bt.handleApiRequest(tempStrSlice[1], channelRflyq, message, "userstate")
 		switch bt.handleExeption(userName, tempStrSlice[1], userOffensive, userDeffensive) {
 		case "killer":
-			bt.say("/timeout @"+tempStrSlice[1]+" 10", channelRflyq)
-			return "Камень бьет ножницы, а я бью твое ебало спамер, НЫА"
+			bt.say("/timeout @"+userName+" 10", channelRflyq)
+			return "Камень бьет ножницы, а я бью твое ебало спамер, НЫА roflanEbalo"
 		case "streamerDeff":
 			return "У стримера бесплотность с капом отката на крики roflanEbalo"
 		case "killed":
