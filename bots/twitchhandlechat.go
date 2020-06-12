@@ -1,6 +1,7 @@
 package bots
 
 import (
+	"bot/resource"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"strconv"
@@ -36,7 +37,9 @@ func (bt *BotTwitch) handleChat() error {
 		return nil
 	}
 	var userName, channel, message string = bt.handleLine(line)
-	bt.writeLog(userName, channel, message)
+	if time.Since(time.Unix(bt.uptime, 0)) > 7*time.Second {
+		bt.writeLog(userName, channel, message)
+	}
 	if strings.Contains(message, "!Ada, ") && (userName == channel || userName == bt.OwnerBot) {
 		go bt.handleMasterCmd(message, channel)
 		return nil
@@ -48,14 +51,22 @@ func (bt *BotTwitch) handleChat() error {
 	}
 	bt.checkReact(channel, message)
 	if strings.Contains(message, "револьвер выстреливает!") && userName == "moobot" {
-		bt.say(bt.resurrected(message, channel), channel)
+		go bt.say(bt.resurrected(message, channel), channel)
 	}
 	lowMessage := strings.ToLower(message)
 	if strings.HasPrefix(lowMessage, TwPrefix) {
 		if _, ok := bt.Settings[channel]; ok {
 			if bt.Settings[channel].CMDStatus {
 				msgSl := strings.Fields(lowMessage)
-				go bt.say(checkCMD(userName, channel, msgSl[0], TW, lowMessage, message), channel)
+				go bt.say(checkCMD(userName, channel, msgSl[0], TW, lowMessage, message, ""), channel)
+			}
+		}
+	}
+	if strings.HasPrefix(lowMessage, TwPrefix) {
+		if _, ok := bt.Settings[channel]; ok {
+			if bt.Settings[channel].CMDStatus {
+				msgSl := strings.Fields(lowMessage)
+				go bt.say(handleCMDfromDB(userName, channel, strings.TrimPrefix(msgSl[0], TwPrefix)), channel)
 			}
 		}
 	}
@@ -84,6 +95,9 @@ func (bt *BotTwitch) writeLog(userName, channel, message string) {
 				"body":     "writeLog",
 				"error":    err,
 			}).Errorln("Ошибка записи лога.")
+		}
+		if !strings.HasPrefix(message, TwPrefix) {
+			bt.MarkovChain += " " + resource.ReadTxt(message)
 		}
 		fmt.Print("[" + timeStamp() + "] [TWITCH] Канал:" + channel + " " +
 			"Ник:" + userName + "\tСообщение:" + message + "\n")
@@ -196,38 +210,27 @@ func (bt *BotTwitch) handleMasterCmd(message, channel string) {
 }
 
 func (bt *BotTwitch) handleLine(line string) (user, channel, message string) {
-	var temp int
+	lineSlice := strings.Fields(line)
+	if len(lineSlice) > 3 {
+		lineSlice[3] = strings.TrimPrefix(lineSlice[3], `:`)
+	}
+	for id, lin := range lineSlice {
+		if id == 3 {
+			message = lin
+		}
+		if id > 3 {
+			message += " " + lin
+		}
+	}
+	if len(lineSlice) > 2 {
+		channel = strings.TrimPrefix(lineSlice[2], `#`)
+	}
 	for _, sym := range line {
 		if sym == '!' {
 			break
 		}
 		if sym != ':' {
 			user += string(sym)
-		}
-	}
-	for _, sym := range line {
-		if sym == '#' {
-			temp = 1
-			continue
-		}
-		if temp == 1 && sym == ' ' {
-			break
-		}
-		if temp == 1 {
-			channel += string(sym)
-		}
-	}
-	temp = 0
-	for _, sym := range line {
-		if sym == ':' {
-			temp += 1
-			continue
-		}
-		if temp == 2 && sym == '\n' {
-			break
-		}
-		if temp == 2 {
-			message += string(sym)
 		}
 	}
 	return user, channel, message

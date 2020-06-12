@@ -79,6 +79,7 @@ func (bt *BotTwitch) openChannelLog() {
 func (bt *BotTwitch) Start() {
 	var err error
 	bt.initBot()
+	go xandrSendRepeatMessage()
 	go bt.sendBlindRepeatMessage()
 	go bt.initApiConfig()
 	for {

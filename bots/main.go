@@ -2,6 +2,7 @@ package bots
 
 import (
 	"bot/resource"
+	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"strings"
 	"sync"
@@ -14,8 +15,8 @@ func timeStamp() string {
 	return time.Now().Format(TimeFormat)
 }
 
-const VERSION = `1.1.0`
-const cmdCOUNT = 24
+const VERSION = `1.2.0`
+const cmdCOUNT = 35
 const TW = "TW"
 const GG = "GG"
 const DIS = "DIS"
@@ -49,7 +50,7 @@ func SingleDiscord() *BotDiscord {
 	return discord
 }
 
-func checkCMD(userName, channel, cmd, platform, message, originMessage string) string {
+func checkCMD(userName, channel, cmd, platform, message, originMessage, custom string) string {
 	var pr string
 	switch platform {
 	case TW:
@@ -68,7 +69,7 @@ func checkCMD(userName, channel, cmd, platform, message, originMessage string) s
 							if us == "all" || us == userName {
 								for _, cc := range cL.Command {
 									if pr+cc == cmd {
-										return handleCMD(userName, channel, cL.Request, platform, message, originMessage)
+										return handleCMD(userName, channel, cL.Request, platform, message, originMessage, custom)
 									}
 								}
 							}
@@ -81,8 +82,72 @@ func checkCMD(userName, channel, cmd, platform, message, originMessage string) s
 	return ""
 }
 
-func handleCMD(userName, channel, cmd, platform, message, originMessage string) string {
+func handleCMDfromDB(userName, channel, cmd string) string {
+	if answer, err := SingleTwitch().channelCMDfromTable(channel, cmd); err != nil {
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "Scan",
+			"error":    err,
+		}).Infoln("Ошибка скан запроса.")
+		return ""
+	} else if answer != "" {
+		return answer
+	}
+	return ""
+}
+
+func handleCMD(userName, channel, cmd, platform, message, originMessage, custom string) string {
 	switch cmd {
+	case "cmd list":
+		return userName + ", " + SingleTwitch().CMDlistFromChannel(channel)
+	case "add command":
+		if !(userName == channel || userName == SingleTwitch().OwnerBot) {
+			return "Permission denied"
+		}
+		msgSlice := strings.Fields(originMessage)
+		if len(msgSlice) < 3 {
+			return "Некорректный ввод"
+		}
+		command := strings.ToLower(msgSlice[1])
+		switch {
+		case SingleTwitch().checkChannelCMDinList(channel, command):
+			return "Команда уже существует в общем пуле команд."
+		case SingleTwitch().checkChannelCMDinTable(channel, command):
+			return "Команда уже существует в пуле команд канала."
+		}
+		answer := strings.TrimPrefix(originMessage, msgSlice[0]+" "+msgSlice[1])
+		return SingleTwitch().addChannelCMD(command, answer, channel)
+	case "update command":
+		if !(userName == channel || userName == SingleTwitch().OwnerBot) {
+			return "Permission denied"
+		}
+		msgSlice := strings.Fields(originMessage)
+		if len(msgSlice) < 3 {
+			return "Некорректный ввод"
+		}
+		command := strings.ToLower(msgSlice[1])
+		switch {
+		case !SingleTwitch().checkChannelCMDinTable(channel, command):
+			return "Команды нет в базе данных этого канала."
+		}
+		answer := strings.TrimPrefix(originMessage, msgSlice[0]+" "+msgSlice[1])
+		return SingleTwitch().updateChannelCMD(command, answer, channel)
+	case "delete command":
+		if !(userName == channel || userName == SingleTwitch().OwnerBot) {
+			return "Permission denied"
+		}
+		msgSlice := strings.Fields(originMessage)
+		if len(msgSlice) < 2 {
+			return "Некорректный ввод"
+		}
+		command := strings.ToLower(msgSlice[1])
+		switch {
+		case !SingleTwitch().checkChannelCMDinTable(channel, command):
+			return "Команды нет в базе данных этого канала."
+		}
+		return SingleTwitch().deleteCMDfromChannel(command, channel)
+	case "markov":
+		return resource.ProcessMarkov(SingleTwitch().MarkovChain)
 	case "ping":
 		return userName + ", pong!"
 	case "add quote":
@@ -124,17 +189,32 @@ func handleCMD(userName, channel, cmd, platform, message, originMessage string) 
 	case "help":
 		switch platform {
 		case TW:
-			return userName + ", Доступные комманды: build, eva, roll, bot, uptime, live, help, master help." +
-				"Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>, хранить можно даже ссылки." +
-				"Получить рандомну квоту из Бд - q или quote. Используйте префикс - " + TwPrefix
+			return userName + ", Доступные комманды: build, eva, roll, bot, uptime, live, help, master help, dbhelp. " +
+				"Используйте префикс - " + TwPrefix
 		case GG:
-			return userName + ", Доступные комманды: build, eva, roll, bot, uptime (берет с твича), live, help." +
-				"Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>, хранить можно даже ссылки." +
-				"Получить рандомну квоту из Бд - q или quote. Используйте префикс - " + GgPrefix
+			return userName + ", Доступные комманды: build, eva, roll, bot, uptime (берет с твича), live, dbhelp." +
+				" Используйте префикс - " + GgPrefix
 		case DIS:
-			return userName + ", Доступные комманды: build, eva, roll, bot, live, help." +
-				"Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>, хранить можно даже ссылки." +
-				"Получить рандомну квоту из Бд - q или quote. Используйте префикс - " + DisPrefix
+			return userName + ", Доступные комманды: build, eva, roll, bot, live, help, dbhelp " +
+				"Используйте префикс - " + DisPrefix
+		}
+	case "database help":
+		switch platform {
+		case TW:
+			return userName + ", Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>," +
+				" хранить можно даже ссылки. Получить рандомну квоту из Бд - q или quote." +
+				" Можно добавить свою команду и ответ на нее, список команд: addcmd, deletecmd, updatecmd." +
+				" Синтаксис: addcmd <cmd> <answer>, deletecmd <cmd>, updatecmd <cmd> <newanswer>." +
+				" Узнать лист добавленных команд: listcmd." +
+				" Используйте префикс - " + TwPrefix
+		case GG:
+			return userName + ", Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>," +
+				" хранить можно даже ссылки. Получить рандомну квоту из Бд - q или quote." +
+				" Используйте префикс - " + GgPrefix
+		case DIS:
+			return userName + ", Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>," +
+				" хранить можно даже ссылки. Получить рандомну квоту из Бд - q или quote." +
+				" Используйте префикс - " + DisPrefix
 		}
 	case "master help":
 		switch platform {
@@ -156,10 +236,8 @@ func handleCMD(userName, channel, cmd, platform, message, originMessage string) 
 	case "вырубайReflyq":
 		return SingleTwitch().handleReflyqCMD(userName, message, "вырубай")
 	case "helpReflyq":
-		return userName + ", Доступные комманды: build, eva, roll, bot, uptime, live, help, master help." +
-			" Уникальные на канале: вырубить, вырубай." +
-			"Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>, хранить можно даже ссылки." +
-			"Получить рандомну квоту из Бд - q или quote. Используйте префикс - " + TwPrefix
+		return userName + ", Доступные комманды: build, eva, roll, bot, uptime, live, help, master help, dbhelp" +
+			" Уникальные на канале: вырубить, вырубай. Используйте префикс - " + TwPrefix
 	case "вырубайBlind":
 		return SingleTwitch().handleBlindCMD(userName, message, "вырубай")
 	case "чезаигра":
@@ -179,10 +257,22 @@ func handleCMD(userName, channel, cmd, platform, message, originMessage string) 
 	case "дискорд":
 		return SingleTwitch().handleBlindCMD(userName, message, cmd)
 	case "helpBlind":
-		return userName + ", Доступные комманды: build, eva, roll, bot, uptime, live, help, master help." +
-			" Уникальные на канале: чезаигра, скиллуха, вырубай, билд, вызватьсанитаров, труба, тыктоблять, дискорд." +
-			"Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>, хранить можно даже ссылки." +
-			"Получить рандомну квоту из Бд - q или quote. Используйте префикс - " + TwPrefix
+		return userName + ", Доступные комманды: build, eva, roll, bot, uptime, live, help, master help, dbhelp" +
+			" Уникальные на канале: чезаигра, скиллуха, вырубай, билд, вызватьсанитаров, труба, тыктоблять, дискорд. " +
+			"Используйте префикс - " + TwPrefix
+	case "love":
+		return xandrHandleCMD(userName, message, cmd, platform, custom)
+	case "roulette":
+		return xandrHandleCMD(userName, message, cmd, platform, custom)
+	case "8ball":
+		return xandrHandleCMD(userName, message, cmd, platform, custom)
+	case "seppuku":
+		return xandrHandleCMD(userName, message, cmd, platform, custom)
+	case "helpXandr_sh":
+		return userName + ", Доступные комманды: build, eva, roll, bot, uptime, live, help, master help, dbhelp" +
+			" Уникальные на канале: шар, info, love, рулетка, харакири. Не забудьте про lcmd что бы увидеть команды" +
+			"хранящиеся в бд. " +
+			"Используйте префикс - " + TwPrefix
 	}
 	return "Ашибка (handleCMD)"
 }
@@ -207,6 +297,18 @@ var reactGG = map[string]string{
 }
 
 var CMDList = [cmdCOUNT]resource.Commands{
+	//Xandr_Sh
+	{Command: []string{"love"}, Platform: []string{TW, GG}, Channels: []string{"xandr_sh", "40756"},
+		Users: []string{"all"}, Request: "love"},
+	{Command: []string{"рулетка"}, Platform: []string{TW, GG}, Channels: []string{"xandr_sh", "40756"},
+		Users: []string{"all"}, Request: "roulette"},
+	{Command: []string{"шар", "8ball"}, Platform: []string{TW, GG}, Channels: []string{"xandr_sh", "40756"},
+		Users: []string{"all"}, Request: "8ball"},
+	{Command: []string{"харакири"}, Platform: []string{TW, GG}, Channels: []string{"xandr_sh", "40756"},
+		Users: []string{"all"}, Request: "seppuku"},
+	{Command: []string{"help", "h", "помощь", "п"}, Platform: []string{TW}, Channels: []string{"reflyq"},
+		Users: []string{"all"}, Request: "helpXandr_sh"},
+
 	//Reflyq
 	{Command: []string{"вырубить"}, Platform: []string{TW}, Channels: []string{"reflyq"},
 		Users: []string{"all"}, Request: "вырубить"},
@@ -260,4 +362,16 @@ var CMDList = [cmdCOUNT]resource.Commands{
 		Users: []string{"all"}, Request: "add quote"},
 	{Command: []string{"q", "quote"}, Platform: []string{"all"}, Channels: []string{"all"},
 		Users: []string{"all"}, Request: "get quote"},
+	{Command: []string{"say"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "markov"},
+	{Command: []string{"acmd", "addcmd"}, Platform: []string{TW}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "add command"},
+	{Command: []string{"ucmd", "updatecmd"}, Platform: []string{TW}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "update command"},
+	{Command: []string{"dcmd", "deletecmd"}, Platform: []string{TW}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "delete command"},
+	{Command: []string{"lcmd", "listcmd"}, Platform: []string{TW}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "cmd list"},
+	{Command: []string{"dbhelp", "databasehelp"}, Platform: []string{"all"}, Channels: []string{"all"},
+		Users: []string{"all"}, Request: "database help"},
 }

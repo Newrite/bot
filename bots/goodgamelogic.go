@@ -146,6 +146,8 @@ func (bgg *BotGoodGame) say(msg, channel string) {
 		}).Infoln("Пустое сообщение.")
 		return
 	}
+	fmt.Println(msg)
+	fmt.Println(channel)
 	_, err := bgg.Connection.Write([]byte(`{"type":"send_message","data":{"channel_id":"` + channel + `","text":"` + msg + `","hideIcon":false,"mobile":false}}`))
 	if err != nil {
 		log.WithFields(log.Fields{

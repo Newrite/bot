@@ -25,6 +25,7 @@ type BotTwitch struct {
 	serverResponse      []byte
 	n                   int
 	uptime              int64
+	MarkovChain         string
 	FileChannelLog      map[string]*os.File
 	Settings            map[string]*botSettings
 }

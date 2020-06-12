@@ -254,26 +254,22 @@ func (bt *BotTwitch) userUseMuteFunc(user string, duration time.Duration) {
 }
 
 func (bt *BotTwitch) handleExeption(userOff, userDeff, userOffStatus, userDeffStatus string) string {
-	if strings.Contains(bt.UsersUseMute, userOff) {
+	switch {
+	case strings.Contains(bt.UsersUseMute, userOff):
 		return "killer"
-	}
-	if userOff == userDeff {
+	case userOff == userDeff:
 		return "shiza"
-	}
-	if userDeff == channelRflyq {
+	case userDeff == channelRflyq:
 		return "streamerDeff"
-	}
-	if strings.Contains(bt.UsersInMute, userDeff) {
+	case strings.Contains(bt.UsersInMute, userDeff):
 		return "killed"
-	}
-	if userOff == channelRflyq {
+	case userOff == channelRflyq:
 		return "reflyqkiller"
-	}
-	if userOffStatus == "mod" {
+	case userOffStatus == "mod":
 		return "modOff"
-	}
-	if userDeffStatus == "mod" {
+	case userDeffStatus == "mod":
 		return "modDeff"
+	default:
+		return ""
 	}
-	return ""
 }

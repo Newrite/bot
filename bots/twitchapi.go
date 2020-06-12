@@ -80,7 +80,7 @@ func (bt *BotTwitch) initApiConfig() {
 
 func (bt *BotTwitch) requestInitStreamersID() {
 	var users usersData
-	bt.ApiConf.Url = "https://api.Twitch.tv/helix/Users?login=" + bt.Channels[0]
+	bt.ApiConf.Url = "https://api.twitch.tv/helix/users?login=" + bt.Channels[0]
 	bt.ApiConf.ChannelsID = make(map[string]string)
 	for _, channel := range bt.Channels {
 		bt.ApiConf.ChannelsID[channel] = ""
@@ -161,7 +161,7 @@ func (bt *BotTwitch) handleApiRequest(username, channel, message, cmd string) st
 
 func (bt *BotTwitch) requestChatterData(channel, username, cmd string) string {
 	var chatters chattersData
-	bt.ApiConf.Url = "https://tmi.Twitch.tv/group/user/" + channel + "/chatters"
+	bt.ApiConf.Url = "https://tmi.twitch.tv/group/user/" + channel + "/chatters"
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.O_Auth)
 	err := json.Unmarshal(body, &chatters)
 	if err != nil {
@@ -192,7 +192,7 @@ func (bt *BotTwitch) requestChatterData(channel, username, cmd string) string {
 
 func (bt *BotTwitch) requestUsersData(channel, username, cmd string) string {
 	var users usersData
-	bt.ApiConf.Url = "https://api.Twitch.tv/helix/Users?login=" + channel
+	bt.ApiConf.Url = "https://api.twitch.tv/helix/users?login=" + channel
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
 	err := json.Unmarshal(body, &users)
 	if err != nil {
@@ -224,7 +224,7 @@ func (bt *BotTwitch) requestUsersData(channel, username, cmd string) string {
 
 func (bt *BotTwitch) requestBroadcasterSubscriptionsData(channel, username, cmd string) string {
 	var broadcasterSubscriptions broadcasterSubscriptionsData
-	bt.ApiConf.Url = "https://api.Twitch.tv/helix/subscriptions?broadcaster_id=" + bt.ApiConf.ChannelsID[channel]
+	bt.ApiConf.Url = "https://api.twitch.tv/helix/subscriptions?broadcaster_id=" + bt.ApiConf.ChannelsID[channel]
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
 	err := json.Unmarshal(body, &broadcasterSubscriptions)
 	if err != nil {
@@ -252,7 +252,7 @@ func (bt *BotTwitch) requestBroadcasterSubscriptionsData(channel, username, cmd 
 
 func (bt *BotTwitch) requestStreamData(channel, username, cmd string) string {
 	var stream streamData
-	bt.ApiConf.Url = "https://api.Twitch.tv/helix/streams?user_login=" + channel
+	bt.ApiConf.Url = "https://api.twitch.tv/helix/streams?user_login=" + channel
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
 	err := json.Unmarshal(body, &stream)
 	if err != nil {

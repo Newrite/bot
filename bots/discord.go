@@ -1,6 +1,7 @@
 package bots
 
 import (
+	"bot/resource"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
@@ -58,10 +59,14 @@ func (db *BotDiscord) messageCreate(s *discordgo.Session, m *discordgo.MessageCr
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
+	if !strings.HasPrefix(m.Content, DisPrefix) {
+		SingleTwitch().MarkovChain += " " + resource.ReadTxt(m.Content)
+	}
 	lowMessage := strings.ToLower(m.Content)
 	if strings.HasPrefix(lowMessage, DisPrefix) {
 		msgSl := strings.Fields(lowMessage)
-		_, err := s.ChannelMessageSend(m.ChannelID, checkCMD("<@"+m.Author.ID+">", m.ChannelID, msgSl[0], "DIS", lowMessage, m.Content))
+		_, err := s.ChannelMessageSend(m.ChannelID, checkCMD("<@"+m.Author.ID+">", m.ChannelID, msgSl[0],
+			"DIS", lowMessage, m.Content, ""))
 		if err != nil {
 			log.WithFields(log.Fields{
 				"package":  "bots",
