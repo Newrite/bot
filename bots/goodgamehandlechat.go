@@ -9,17 +9,17 @@ import (
 
 func (bgg *BotGoodGame) handleChat() error {
 	response := bgg.readServer()
-	fmt.Println(response)
-	if !strings.Contains(response, "\"type\":\"message\"") {
-		return nil
-	}
+	//fmt.Println(response)
+	//if !strings.Contains(response, "\"type\":\"message\"") {
+	//	return nil
+	//}
 	var userID, userName, channel, message string = bgg.handleLine(response)
 	fmt.Print("[" + timeStamp() + "] [GOODGAME] Канал:" + channel + " " +
 		"Ник:" + userName + "\tСообщение:" + message + "\n")
 	if !strings.HasPrefix(message, GgPrefix) {
 		SingleTwitch().MarkovChain += " " + resource.ReadTxt(message)
 	}
-	fmt.Println("ID:", strings.TrimSpace(userID))
+	//fmt.Println("ID:", strings.TrimSpace(userID))
 	bgg.checkReact(channel, message)
 	lowMessage := strings.ToLower(message)
 	if strings.HasPrefix(lowMessage, GgPrefix) {
