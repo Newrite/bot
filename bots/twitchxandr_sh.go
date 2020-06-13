@@ -132,7 +132,7 @@ func xandrHandleCMD(userName, message, cmd, platform, ggUserID string) string {
 			}
 		}
 	case "8ball":
-		return userName+`, `+resource.Eva8ball[rand.Intn(resource.Count8Ball)]
+		return userName + `, ` + resource.Eva8ball[rand.Intn(resource.Count8Ball)]
 	default:
 		return "Ашибка xandrHandleCMD"
 	}

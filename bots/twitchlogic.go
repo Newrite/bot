@@ -130,7 +130,7 @@ func (bt *BotTwitch) joinChannels() error {
 	var err error
 	_, err = bt.Connection.Write([]byte("PASS " + bt.OAuth + "\r\n"))
 	_, err = bt.Connection.Write([]byte("NICK " + bt.BotName + "\r\n"))
-	//_, err = bt.Connection.Write([]byte("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership"))
+	_, err = bt.Connection.Write([]byte("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership"))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"package":  "bots",

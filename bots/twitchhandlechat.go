@@ -12,14 +12,19 @@ import (
 func (bt *BotTwitch) handleChat() error {
 	line, err := bt.ReadChannels.ReadLine()
 	if err != nil {
-		log.WithFields(log.Fields{
-			"package":  "bots",
-			"function": "ReadChannels.ReadLine",
-			"file":     "twitchhandlechat.go",
-			"body":     "handleChat",
-			"error":    err,
-		}).Errorln("Ошибка чтения строки.")
-		return err
+		switch {
+		case err.Error() == "EOF":
+			return nil
+		default:
+			log.WithFields(log.Fields{
+				"package":  "bots",
+				"function": "ReadChannels.ReadLine",
+				"file":     "twitchhandlechat.go",
+				"body":     "handleChat",
+				"error":    err,
+			}).Errorln("Ошибка чтения строки.")
+			return err
+		}
 	}
 	if line == "PING :tmi.Twitch.tv" {
 		fmt.Println("PING :tmi.Twitch.tv")
@@ -36,7 +41,10 @@ func (bt *BotTwitch) handleChat() error {
 		}
 		return nil
 	}
-	var userName, channel, message string = bt.handleLine(line)
+	var userName, channel, message, rewardID string = bt.handleLine(line)
+	if rewardID != "" {
+		go bt.handleRewards(message, userName, channel, rewardID)
+	}
 	if time.Since(time.Unix(bt.uptime, 0)) > 7*time.Second {
 		bt.writeLog(userName, channel, message)
 	}
@@ -117,6 +125,30 @@ func (bt *BotTwitch) checkReact(channel, message string) {
 					break
 				}
 			}
+		}
+	}
+}
+
+func (bt *BotTwitch) handleRewards(message, userName, channel, rewardID string) {
+	switch channel {
+	case "reflyq":
+		switch rewardID {
+		case "fa297b45-75cc-4ef2-ba49-841b0fa86ec1":
+			msgSlice := strings.Fields(message)
+			//switch  {
+			//case bt.handleApiRequest(userName,channel, message, "userstate") == "mod"
+			//case len(msgSlice) < 1:
+			//	bt.say("Ошибка, пустое сообщение.", channel)
+			//	return
+			//}
+			if len(msgSlice) < 1 {
+				bt.say("Ошибка, пустое сообщение.", channel)
+				return
+			}
+			bt.say(msgSlice[0]+" заткнули", channel)
+			bt.say("/timeout "+msgSlice[0]+" 300 заткнули", channel)
+			time.Sleep(300 * time.Second)
+			bt.say("/untimeout "+msgSlice[0], channel)
 		}
 	}
 }
@@ -209,29 +241,31 @@ func (bt *BotTwitch) handleMasterCmd(message, channel string) {
 	}
 }
 
-func (bt *BotTwitch) handleLine(line string) (user, channel, message string) {
-	lineSlice := strings.Fields(line)
-	if len(lineSlice) > 3 {
-		lineSlice[3] = strings.TrimPrefix(lineSlice[3], `:`)
-	}
+func (bt *BotTwitch) handleLine(line string) (user, channel, message, rewardID string) {
+	fmt.Println(line)
+	var msgID int
+	lineSlice := strings.Fields(strings.Replace(line, ";", " ", -1))
 	for id, lin := range lineSlice {
-		if id == 3 {
-			message = lin
+		fmt.Println("ID:", id, " Field:", lin)
+		if lin == "PRIVMSG" && msgID == 0 {
+			msgID = id + 2
 		}
-		if id > 3 {
+		if id == msgID && msgID != 0 {
+			message = strings.TrimPrefix(lin, `:`)
+		}
+		if id > msgID && msgID != 0 {
 			message += " " + lin
 		}
-	}
-	if len(lineSlice) > 2 {
-		channel = strings.TrimPrefix(lineSlice[2], `#`)
-	}
-	for _, sym := range line {
-		if sym == '!' {
-			break
+		if strings.Contains(lin, "custom-reward-id=") {
+			rewardID = strings.TrimPrefix(lin, "custom-reward-id=")
 		}
-		if sym != ':' {
-			user += string(sym)
+		if strings.Contains(lin, "display-name=") {
+			user = strings.ToLower(strings.TrimPrefix(lin, "display-name="))
+		}
+		if strings.HasPrefix(lin, `#`) {
+			channel = strings.TrimPrefix(lin, `#`)
 		}
 	}
-	return user, channel, message
+	fmt.Println("Ревард:", rewardID)
+	return user, channel, message, rewardID
 }
