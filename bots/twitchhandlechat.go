@@ -26,8 +26,8 @@ func (bt *BotTwitch) handleChat() error {
 			return err
 		}
 	}
-	if line == "PING :tmi.Twitch.tv" {
-		fmt.Println("PING :tmi.Twitch.tv")
+	if strings.Contains(line, `PING :tmi.Twitch.tv`) {
+		fmt.Println("PING :tmi.Twitch.tv in handleChat")
 		_, err := bt.Connection.Write([]byte("PONG\r\n"))
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -242,11 +242,11 @@ func (bt *BotTwitch) handleMasterCmd(message, channel string) {
 }
 
 func (bt *BotTwitch) handleLine(line string) (user, channel, message, rewardID string) {
-	fmt.Println(line)
+	//fmt.Println(line)
 	var msgID int
 	lineSlice := strings.Fields(strings.Replace(line, ";", " ", -1))
 	for id, lin := range lineSlice {
-		fmt.Println("ID:", id, " Field:", lin)
+		//fmt.Println("ID:", id, " Field:", lin)
 		if lin == "PRIVMSG" && msgID == 0 {
 			msgID = id + 2
 		}
