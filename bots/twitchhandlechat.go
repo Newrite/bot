@@ -12,19 +12,14 @@ import (
 func (bt *BotTwitch) handleChat() error {
 	line, err := bt.ReadChannels.ReadLine()
 	if err != nil {
-		switch {
-		case err.Error() == "EOF":
-			return nil
-		default:
-			log.WithFields(log.Fields{
-				"package":  "bots",
-				"function": "ReadChannels.ReadLine",
-				"file":     "twitchhandlechat.go",
-				"body":     "handleChat",
-				"error":    err,
-			}).Errorln("Ошибка чтения строки.")
-			return err
-		}
+		log.WithFields(log.Fields{
+			"package":  "bots",
+			"function": "ReadChannels.ReadLine",
+			"file":     "twitchhandlechat.go",
+			"body":     "handleChat",
+			"error":    err,
+		}).Errorln("Ошибка чтения строки.")
+		return err
 	}
 	if line == `PING :tmi.twitch.tv` {
 		fmt.Println("PING :tmi.twitch.tv in handleChat")
