@@ -15,8 +15,8 @@ func timeStamp() string {
 	return time.Now().Format(TimeFormat)
 }
 
-const VERSION = `1.3.2`
-const cmdCOUNT = 35
+const VERSION = `1.3.3`
+const cmdCOUNT = 33
 const TW = "TW"
 const GG = "GG"
 const DIS = "DIS"
@@ -358,10 +358,10 @@ var CMDList = [cmdCOUNT]resource.Commands{
 		Users: []string{"all"}, Request: "live"},
 	{Command: []string{"v", "VERSION", "версия"}, Platform: []string{"all"}, Channels: []string{"all"},
 		Users: []string{"all"}, Request: "VERSION"},
-	{Command: []string{"aq", "addquote"}, Platform: []string{"all"}, Channels: []string{"all"},
-		Users: []string{"all"}, Request: "add quote"},
-	{Command: []string{"q", "quote"}, Platform: []string{"all"}, Channels: []string{"all"},
-		Users: []string{"all"}, Request: "get quote"},
+	//{Command: []string{"aq", "addquote"}, Platform: []string{"all"}, Channels: []string{"all"},
+	//	Users: []string{"all"}, Request: "add quote"},
+	//{Command: []string{"q", "quote"}, Platform: []string{"all"}, Channels: []string{"all"},
+	//	Users: []string{"all"}, Request: "get quote"},
 	{Command: []string{"say"}, Platform: []string{"all"}, Channels: []string{"all"},
 		Users: []string{"all"}, Request: "markov"},
 	{Command: []string{"acmd", "addcmd"}, Platform: []string{TW}, Channels: []string{"all"},
