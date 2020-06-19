@@ -14,8 +14,8 @@ func (bgg *BotGoodGame) handleChat() error {
 		return nil
 	}
 	var userID, userName, channel, message string = bgg.handleLine(response)
-	fmt.Print("[" + timeStamp() + "] [GOODGAME] Канал:" + channel + " " +
-		"Ник:" + userName + "\tСообщение:" + message + "\n")
+	fmt.Print("[" + timeStamp() + "] [GOODGAME] Канал: " + channel + " " +
+		"Ник: " + userName + "\tСообщение: " + message + "\n")
 	if !strings.HasPrefix(message, GgPrefix) {
 		SingleTwitch().MarkovChain += " " + resource.ReadTxt(message)
 	}

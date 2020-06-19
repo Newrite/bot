@@ -102,8 +102,8 @@ func (bt *BotTwitch) writeLog(userName, channel, message string) {
 		if !strings.HasPrefix(message, TwPrefix) {
 			bt.MarkovChain += " " + resource.ReadTxt(message)
 		}
-		fmt.Print("[" + timeStamp() + "] [TWITCH] Канал:" + channel + " " +
-			"Ник:" + userName + "\tСообщение:" + message + "\n")
+		fmt.Print("[" + timeStamp() + "] [TWITCH] Канал: " + channel + " " +
+			"Ник: " + userName + "\tСообщение: " + message + "\n")
 	}
 }
 

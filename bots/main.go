@@ -20,13 +20,19 @@ const cmdCOUNT = 33
 const TW = "TW"
 const GG = "GG"
 const DIS = "DIS"
+const MIX = "MIX"
 const TwPrefix = "!"
 const GgPrefix = "!"
 const DisPrefix = "~"
+const MixPrefix = "!"
+
+const newriteChannelID = "171903618"
+const immersiveEvaUserID = "183333444"
 
 var twitch = &BotTwitch{}
 var goodgame = &BotGoodGame{}
 var discord = &BotDiscord{}
+var mixer = &BotMixer{}
 var once sync.Once
 
 func SingleTwitch() *BotTwitch {
@@ -50,6 +56,13 @@ func SingleDiscord() *BotDiscord {
 	return discord
 }
 
+func SingleMixer() *BotMixer {
+	once.Do(func() {
+		mixer = &BotMixer{}
+	})
+	return mixer
+}
+
 func checkCMD(userName, channel, cmd, platform, message, originMessage, custom string) string {
 	var pr string
 	switch platform {
@@ -59,6 +72,8 @@ func checkCMD(userName, channel, cmd, platform, message, originMessage, custom s
 		pr = GgPrefix
 	case DIS:
 		pr = DisPrefix
+	case MIX:
+		pr = MixPrefix
 	}
 	for _, cL := range CMDList {
 		for _, pl := range cL.Platform {
@@ -172,6 +187,9 @@ func handleCMD(userName, channel, cmd, platform, message, originMessage, custom 
 		case DIS:
 			d := time.Since(time.Unix(SingleDiscord().uptime, 0))
 			return userName + ", " + d.String()
+		case MIX:
+			d := time.Since(time.Unix(SingleMixer().uptime, 0))
+			return userName + ", " + d.String()
 		}
 	case "VERSION":
 		return userName + ", " + VERSION
@@ -182,9 +200,9 @@ func handleCMD(userName, channel, cmd, platform, message, originMessage, custom 
 	case "roll":
 		return userName + ", " + resource.Rolls(message)
 	case "bot":
-		return userName + ", AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек (для GG и twitch). " +
+		return userName + ", AdaIsEva, написана на GoLang v1.14 без использования сторонних библиотек (для GG, twitch и Mixer). " +
 			"Для дискорда использовалось discordgo by bwmarrin." +
-			"Живет на VPS с убунтой размещенном в москоу сити. Рекомендации, пожелания и" +
+			"Живет на OrangePI PC Plus с armbian у меня дома. Рекомендации, пожелания и" +
 			" прочая можно присылать на adaiseva.newrite@gmail.com"
 	case "help":
 		switch platform {
@@ -197,6 +215,9 @@ func handleCMD(userName, channel, cmd, platform, message, originMessage, custom 
 		case DIS:
 			return userName + ", Доступные комманды: build, eva, roll, bot, live, help, dbhelp " +
 				"Используйте префикс - " + DisPrefix
+		case MIX:
+			return userName + ", Доступные комманды: build, eva, roll, bot, live, dbhelp." +
+				" Используйте префикс - " + MixPrefix
 		}
 	case "database help":
 		switch platform {
@@ -215,6 +236,10 @@ func handleCMD(userName, channel, cmd, platform, message, originMessage, custom 
 			return userName + ", Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>," +
 				" хранить можно даже ссылки. Получить рандомну квоту из Бд - q или quote." +
 				" Используйте префикс - " + DisPrefix
+		case MIX:
+			return userName + ", Взаимодействие с БД: Добавить квоту - addquote <message> или aq <message>," +
+				" хранить можно даже ссылки. Получить рандомну квоту из Бд - q или quote." +
+				" Используйте префикс - " + MixPrefix
 		}
 	case "master help":
 		switch platform {

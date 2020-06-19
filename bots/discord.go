@@ -54,8 +54,8 @@ func (db *BotDiscord) Start() {
 }
 
 func (db *BotDiscord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	fmt.Println("["+timeStamp()+"] [DISCORD] Сервер:"+m.GuildID+" Канал:"+m.ChannelID+" Ник:",
-		m.Author, " Сообщение:", m.Content)
+	fmt.Println("["+timeStamp()+"] [DISCORD] Сервер: "+m.GuildID+" Канал: "+m.ChannelID+" Ник: ",
+		m.Author, " Сообщение: ", m.Content)
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
