@@ -20,10 +20,8 @@ type BotTwitch struct {
 	ApiConf             *apiConfig
 	GoodGameBotPtr      *BotGoodGame
 	DiscordPtr          *BotDiscord
-	UsersInMute         string
-	UsersUseMute        string
-	serverResponse      []byte
-	n                   int
+	MutedUsers          map[string]bool
+	UsersMuted          map[string]bool
 	uptime              int64
 	MarkovChain         string
 	FileChannelLog      map[string]*os.File

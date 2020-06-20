@@ -3,7 +3,7 @@ package resource
 const (
 	CountBuilds  int = 18
 	CountAnswers int = 19
-	Count8Ball int = 40
+	Count8Ball   int = 40
 )
 
 var BuildAnswers = [CountBuilds]string{

@@ -82,6 +82,8 @@ func (bt *BotTwitch) Start() {
 	go xandrSendRepeatMessage()
 	go bt.sendBlindRepeatMessage()
 	go bt.initApiConfig()
+	bt.MutedUsers = make(map[string]bool)
+	bt.UsersMuted = make(map[string]bool)
 	for {
 		bt.connect()
 		err = bt.joinChannels()

@@ -19,9 +19,18 @@ type State struct {
 var markov Markov
 
 func ReadTxt(message string) string {
-	dataClean := strings.Replace(string(message), "\n", " ", -1)
-	content := string(dataClean)
-	return content
+	dataFields := strings.Fields(strings.Replace(message, "\n", " ", -1))
+	var str, sep string
+	for _, field := range dataFields {
+		if !strings.HasPrefix(field, "http") &&
+			!strings.HasPrefix(field, "@") &&
+			!strings.HasPrefix(field, "<@") &&
+			!strings.HasPrefix(field, "<:") {
+			str += sep + field
+			sep = " "
+		}
+	}
+	return str
 }
 
 func printLoading(n int, total int) {

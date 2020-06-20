@@ -242,26 +242,38 @@ func (bt *BotTwitch) reflyqAnswer(offUser, deffUser, channel string, victory boo
 }
 
 func (bt *BotTwitch) userInMuteFunc(user string, duration time.Duration) {
-	bt.UsersInMute += user
+	bt.MutedUsers[user] = true
 	time.Sleep(duration * time.Second)
-	bt.UsersInMute = strings.Replace(bt.UsersInMute, user, "", -1)
+	bt.MutedUsers[user] = false
 }
 
 func (bt *BotTwitch) userUseMuteFunc(user string, duration time.Duration) {
-	bt.UsersUseMute += user
+	bt.UsersMuted[user] = true
 	time.Sleep(duration * time.Second)
-	bt.UsersUseMute = strings.Replace(bt.UsersUseMute, user, "", -1)
+	bt.UsersMuted[user] = false
 }
 
 func (bt *BotTwitch) handleExeption(userOff, userDeff, userOffStatus, userDeffStatus string) string {
+	killer := false
+	killed := false
+	if _, ok := bt.UsersMuted[userOff]; ok {
+		if bt.UsersMuted[userOff] {
+			killer = true
+		}
+	}
+	if _, ok := bt.MutedUsers[userDeff]; ok {
+		if bt.MutedUsers[userOff] {
+			killed = true
+		}
+	}
 	switch {
-	case strings.Contains(bt.UsersUseMute, userOff):
+	case killer:
 		return "killer"
 	case userOff == userDeff:
 		return "shiza"
 	case userDeff == channelRflyq:
 		return "streamerDeff"
-	case strings.Contains(bt.UsersInMute, userDeff):
+	case killed:
 		return "killed"
 	case userOff == channelRflyq:
 		return "reflyqkiller"
