@@ -131,20 +131,24 @@ func (bt *BotTwitch) handleRewards(message, userName, channel, rewardID string) 
 		switch rewardID {
 		case "fa297b45-75cc-4ef2-ba49-841b0fa86ec1":
 			msgSlice := strings.Fields(strings.ToLower(message))
-			switch {
-			case len(msgSlice) < 1:
+			var userDeff string
+			if len(msgSlice) < 1 {
 				bt.say("Ошибка, пустое сообщение.", channel)
 				return
-			case bt.handleApiRequest(strings.TrimPrefix(msgSlice[0], "@"), channel, message, "userstate") == "mod":
+			} else {
+				userDeff = strings.TrimPrefix(msgSlice[0], "@")
+			}
+			switch {
+			case bt.handleApiRequest(userDeff, channel, message, "userstate") == "mod":
 				bt.say(userName+", ты чё дурачокус? peepoClown", channel)
 				return
-			case strings.TrimPrefix(msgSlice[0], "@") == channel:
+			case userDeff == channel:
 				bt.say(userName+", ага как скажешь roflanEbalo", channel)
 				return
-			case userName == strings.TrimPrefix(msgSlice[0], "@"):
+			case userName == userDeff:
 				bt.say(userName+", я давно хотела это сделать peepoGun", channel)
 			}
-			if userName != strings.TrimPrefix(msgSlice[0], "@") {
+			if userName != userDeff {
 				switch rand.Intn(5) {
 				case 0:
 					bt.say(userName+", вставляет кляп в рот ничего не подозревающего "+msgSlice[0], channel)
@@ -158,23 +162,23 @@ func (bt *BotTwitch) handleRewards(message, userName, channel, rewardID string) 
 					bt.say(userName+", проветривает чатик от присутствия "+msgSlice[0], channel)
 				}
 			}
-			switch bt.handleApiRequest(strings.TrimPrefix(msgSlice[0], "@"), channel, message, "userstate") {
+			switch bt.handleApiRequest(userDeff, channel, message, "userstate") {
 			case "unsub":
-				bt.say("/timeout "+msgSlice[0]+" 600 заткнули", channel)
+				bt.say("/timeout "+userDeff+" 600 заткнули", channel)
 				time.Sleep(600 * time.Second)
-				bt.say("/untimeout "+msgSlice[0], channel)
+				bt.say("/untimeout "+userDeff, channel)
 			case "vip":
-				bt.say("/timeout "+msgSlice[0]+" 450 заткнули", channel)
+				bt.say("/timeout "+userDeff+" 450 заткнули", channel)
 				time.Sleep(450 * time.Second)
-				bt.say("/untimeout "+msgSlice[0], channel)
+				bt.say("/untimeout "+userDeff, channel)
 			case "sub":
-				bt.say("/timeout "+msgSlice[0]+" 300 заткнули", channel)
+				bt.say("/timeout "+userDeff+" 300 заткнули", channel)
 				time.Sleep(300 * time.Second)
-				bt.say("/untimeout "+msgSlice[0], channel)
+				bt.say("/untimeout "+userDeff, channel)
 			case "subvip":
-				bt.say("/timeout "+msgSlice[0]+" 150 заткнули", channel)
+				bt.say("/timeout "+userDeff+" 150 заткнули", channel)
 				time.Sleep(150 * time.Second)
-				bt.say("/untimeout "+msgSlice[0], channel)
+				bt.say("/untimeout "+userDeff, channel)
 			}
 		}
 	}

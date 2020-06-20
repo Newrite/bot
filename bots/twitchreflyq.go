@@ -170,8 +170,37 @@ func (bt *BotTwitch) handleReflyqCMD(userName, message, cmd string) string {
 }
 
 func (bt *BotTwitch) reflyqAnswer(offUser, deffUser, channel string, victory bool) string {
+	offUserState := bt.handleApiRequest(offUser, channel, "", "userstate")
 	go bt.userUseMuteFunc(offUser, time.Duration(useMuteTime))
 	if victory {
+		if offUserState == "sub" && rand.Intn(100) >= 50 {
+			switch rand.Intn(6) {
+			case 0:
+				go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
+				bt.say("/timeout @"+deffUser+" "+strconv.Itoa(inMuteTime), channel)
+				return offUser + " произносит FUS RO Dah и несчастного "+deffUser+" сдувает нахуй из чатика roflanEbalo"
+			case 1:
+				go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
+				bt.say("/timeout @"+deffUser+" "+strconv.Itoa(inMuteTime), channel)
+				return offUser + " закидывает грозовыми порошками бедного " + deffUser + ", ужасное зрелище monkaS"
+			case 2:
+				go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
+				bt.say("/timeout @"+deffUser+" "+strconv.Itoa(inMuteTime), channel)
+				return offUser + " выпускает шквал фаерболов из посоха, от " + deffUser + ", осталась лишь горстка пепла REEeee"
+			case 3:
+				go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
+				bt.say("/timeout @"+deffUser+" "+strconv.Itoa(inMuteTime), channel)
+				return offUser + " с помощью погребения изолирует " + deffUser + " от чатика Minik"
+			case 4:
+				go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
+				bt.say("/timeout @"+deffUser+" "+strconv.Itoa(inMuteTime), channel)
+				return offUser + " знакомит " + deffUser + " со своим дреморой, вам лучше не знать подробностей Kappapa"
+			case 5:
+				go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
+				bt.say("/timeout @"+deffUser+" "+strconv.Itoa(inMuteTime), channel)
+				return offUser + " обернувшись вервольфом раздирает на куски бедного " + deffUser
+			}
+		}
 		switch rand.Intn(6) {
 		case 0:
 			go bt.userInMuteFunc(deffUser, time.Duration(inMuteTime))
@@ -205,6 +234,16 @@ func (bt *BotTwitch) reflyqAnswer(offUser, deffUser, channel string, victory boo
 			return ""
 		}
 	} else {
+		if offUserState == "sub" && rand.Intn(100) >= 50 {
+			switch rand.Intn(2) {
+			case 0:
+				return offUser + " произносит FUS RO Dah, но у "+deffUser+" маг. резиста и он стоит как ни в чем не бывало peepoClown"
+			case 1:
+				go bt.userInMuteFunc(offUser, time.Duration(inMuteTime))
+				bt.say("/timeout @"+offUser+" "+strconv.Itoa(inMuteTime), channel)
+				return offUser + " забыл зарядить свой посох, результат предсказуем Kapp"
+			}
+		}
 		switch rand.Intn(7) {
 		case 0:
 			return offUser + " мастерским выстрелом поражает голову " + deffUser + ", стрела проходит на вылет," +
