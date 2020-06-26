@@ -1,6 +1,7 @@
 package bots
 
 import (
+	"bot/controllers"
 	"bot/resource"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
@@ -25,7 +26,7 @@ func (db *BotDiscord) Start() {
 	db.token = "NzE2NjQ1Mzk1MDE0NjE1MDkw.Xturow.poE1BaMJYVYIIdm_q0mi7u7kHlg"
 	db.Session, err = discordgo.New("Bot " + db.token)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "discordgo.New",
 			"file":     "discord.go",
@@ -36,7 +37,7 @@ func (db *BotDiscord) Start() {
 	db.Session.AddHandler(db.messageCreate)
 	err = db.Session.Open()
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Session.Open",
 			"file":     "discord.go",
@@ -68,7 +69,7 @@ func (db *BotDiscord) messageCreate(s *discordgo.Session, m *discordgo.MessageCr
 		_, err := s.ChannelMessageSend(m.ChannelID, checkCMD("<@"+m.Author.ID+">", m.ChannelID, msgSl[0],
 			"DIS", lowMessage, m.Content, ""))
 		if err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "discordgo.New",
 				"file":     "discord.go",

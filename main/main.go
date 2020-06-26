@@ -11,6 +11,6 @@ func main() {
 	rand.Seed(time.Now().Unix())
 	go bots.SingleTwitch().Start()
 	go bots.SingleGoodGame().Start()
-	go bots.SingleMixer().Start()
+	//go bots.SingleMixer().Start()
 	bots.SingleDiscord().Start()
 }

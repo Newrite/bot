@@ -15,7 +15,7 @@ func timeStamp() string {
 	return time.Now().Format(TimeFormat)
 }
 
-const VERSION = `1.3.3`
+const VERSION = `1.3.4`
 const cmdCOUNT = 33
 const TW = "TW"
 const GG = "GG"

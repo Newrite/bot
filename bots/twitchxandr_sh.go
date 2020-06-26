@@ -1,6 +1,7 @@
 package bots
 
 import (
+	"bot/controllers"
 	"bot/resource"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
@@ -74,7 +75,7 @@ func xandrHandleCMD(userName, message, cmd, platform, ggUserID string) string {
     }
 }`))
 			if err != nil {
-				log.WithFields(log.Fields{
+				controllers.SingleLog().WithFields(log.Fields{
 					"package":  "bots",
 					"function": "Connection.Write",
 					"file":     "twitchxandr_sh.go",
@@ -109,7 +110,7 @@ func xandrHandleCMD(userName, message, cmd, platform, ggUserID string) string {
     }
 }`))
 				if err != nil {
-					log.WithFields(log.Fields{
+					controllers.SingleLog().WithFields(log.Fields{
 						"package":  "bots",
 						"function": "Connection.Write",
 						"file":     "twitchxandr_sh.go",

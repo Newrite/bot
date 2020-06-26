@@ -1,6 +1,7 @@
 package bots
 
 import (
+	"bot/controllers"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -16,7 +17,7 @@ import (
 func (bt *BotTwitch) initBot() {
 	botFile, err := ioutil.ReadFile("BotData.json")
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "ioutil.ReadFile",
 			"file":     "twitchlogic.go",
@@ -27,7 +28,7 @@ func (bt *BotTwitch) initBot() {
 	}
 	err = json.Unmarshal(botFile, bt)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "json.Unmarshal",
 			"file":     "twitchlogic.go",
@@ -44,7 +45,7 @@ func (bt *BotTwitch) openChannelLog() {
 		var err error
 		err = os.MkdirAll("logs/"+channel+" Channel", 0777)
 		if err != nil && !strings.Contains(err.Error(), "Cannot create a file when that file already exists.") {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "os.MkdirAll",
 				"file":     "twitchlogic.go",
@@ -53,7 +54,7 @@ func (bt *BotTwitch) openChannelLog() {
 			}).Errorln("Не удалось создать директорию для канала.")
 			err = nil
 		} else if err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "os.MkdirAll",
 				"file":     "twitchlogic.go",
@@ -65,7 +66,7 @@ func (bt *BotTwitch) openChannelLog() {
 		bt.FileChannelLog[channel], err = os.OpenFile(
 			"logs/"+channel+" Channel/"+channel+" Log.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "os.OpenFile",
 				"file":     "twitchlogic.go",
@@ -95,7 +96,7 @@ func (bt *BotTwitch) Start() {
 		bt.uptime = time.Now().Unix()
 		err = bt.listenChannels()
 		if err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "listenChannels",
 				"file":     "twitchlogic.go",
@@ -116,7 +117,7 @@ func (bt *BotTwitch) connect() {
 	var err error
 	bt.Connection, err = net.Dial("tcp", bt.Server+":"+bt.Port)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "net.Dial",
 			"file":     "twitchlogic.go",
@@ -134,7 +135,7 @@ func (bt *BotTwitch) joinChannels() error {
 	_, err = bt.Connection.Write([]byte("NICK " + bt.BotName + "\r\n"))
 	_, err = bt.Connection.Write([]byte("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership\r\n"))
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Connection.Write",
 			"file":     "twitchlogic.go",
@@ -147,7 +148,7 @@ func (bt *BotTwitch) joinChannels() error {
 	for _, channel := range bt.Channels {
 		_, err := bt.Connection.Write([]byte("JOIN #" + channel + "\r\n"))
 		if err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "Connection.Write",
 				"file":     "twitchlogic.go",
@@ -171,7 +172,7 @@ func (bt *BotTwitch) listenChannels() error {
 	//go bt.startPubSub()
 	for {
 		if err = bt.handleChat(); err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "handleChat",
 				"file":     "twitchlogic.go",
@@ -185,7 +186,7 @@ func (bt *BotTwitch) listenChannels() error {
 
 func (bt *BotTwitch) say(msg, channel string) {
 	if msg == "" {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "msg == \"\"",
 			"file":     "twitchlogic.go",
@@ -196,7 +197,7 @@ func (bt *BotTwitch) say(msg, channel string) {
 	}
 	_, err := bt.Connection.Write([]byte("PRIVMSG #" + channel + " :" + msg + "\r\n"))
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Connection.Write",
 			"file":     "twitchlogic.go",
@@ -207,7 +208,7 @@ func (bt *BotTwitch) say(msg, channel string) {
 	_, err = bt.FileChannelLog[channel].WriteString("[" + timeStamp() + "] [TWITCH] Канал:" + channel +
 		" Ник:" + bt.BotName + "\tСообщение:" + msg + "\n")
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "FileChannelLog[channel].WriteString",
 			"file":     "twitchlogic.go",

@@ -1,6 +1,7 @@
 package bots
 
 import (
+	"bot/controllers"
 	"bot/resource"
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -13,7 +14,7 @@ import (
 func (bt *BotTwitch) handleChat() error {
 	line, err := bt.ReadChannels.ReadLine()
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "ReadChannels.ReadLine",
 			"file":     "twitchhandlechat.go",
@@ -26,7 +27,7 @@ func (bt *BotTwitch) handleChat() error {
 		fmt.Println("PING :tmi.twitch.tv in handleChat")
 		_, err := bt.Connection.Write([]byte("PONG\r\n"))
 		if err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "Connection.Write",
 				"file":     "twitchhandlechat.go",
@@ -92,7 +93,7 @@ func (bt *BotTwitch) writeLog(userName, channel, message string) {
 		_, err := bt.FileChannelLog[channel].WriteString("[" + timeStamp() + "] [TWITCH] Канал:" + channel +
 			" Ник:" + userName + "\tСообщение:" + message + "\n")
 		if err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "FileChannelLog[channel].WriteString",
 				"file":     "twitchhandlechat.go",

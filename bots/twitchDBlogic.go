@@ -1,6 +1,7 @@
 package bots
 
 import (
+	"bot/controllers"
 	"bot/resource"
 	log "github.com/sirupsen/logrus"
 	"strings"
@@ -20,7 +21,7 @@ create table if not exists TWITCH_CHANNEL_CONFIG
     IS_MODERATOR    INTEGER not null
 );`)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Exec",
 			"error":    err,
@@ -36,7 +37,7 @@ create table if not exists ` + channel + `_CMD_LIST
     ANSWER          TEXT not null
 );`)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Exec",
 			"error":    err,
@@ -47,7 +48,7 @@ create table if not exists ` + channel + `_CMD_LIST
 func (bt *BotTwitch) checkChannelCMDinTable(channel, cmd string) bool {
 	rows, err := resource.SingleDB().Query(`SELECT COMMAND FROM ` + channel + `_CMD_LIST`)
 	if rows == nil || err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Query",
 			"error":    err,
@@ -58,7 +59,7 @@ func (bt *BotTwitch) checkChannelCMDinTable(channel, cmd string) bool {
 	for rows.Next() {
 		err = rows.Scan(&command)
 		if err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "Scan",
 				"error":    err,
@@ -74,7 +75,7 @@ func (bt *BotTwitch) checkChannelCMDinTable(channel, cmd string) bool {
 func (bt *BotTwitch) channelCMDfromTable(channel, cmd string) (string, error) {
 	rows, err := resource.SingleDB().Query(`SELECT ANSWER FROM `+channel+`_CMD_LIST WHERE COMMAND = $1`, cmd)
 	if rows == nil || err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Query",
 			"error":    err,
@@ -86,7 +87,7 @@ func (bt *BotTwitch) channelCMDfromTable(channel, cmd string) (string, error) {
 	for rows.Next() {
 		err = rows.Scan(&answer)
 		if err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "Scan",
 				"error":    err,
@@ -101,7 +102,7 @@ func (bt *BotTwitch) channelCMDfromTable(channel, cmd string) (string, error) {
 func (bt *BotTwitch) CMDlistFromChannel(channel string) string {
 	rows, err := resource.SingleDB().Query(`SELECT COMMAND FROM ` + channel + `_CMD_LIST`)
 	if rows == nil || err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Query",
 			"error":    err,
@@ -114,7 +115,7 @@ func (bt *BotTwitch) CMDlistFromChannel(channel string) string {
 	for rows.Next() {
 		err = rows.Scan(&a)
 		if err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "Scan",
 				"error":    err,
@@ -153,7 +154,7 @@ func (bt *BotTwitch) addChannelCMD(command, answer, channel string) string {
 				($1, $2)`,
 		command, answer)
 	if err != nil || result == nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Exec",
 			"error":    err,
@@ -172,7 +173,7 @@ func (bt *BotTwitch) updateChannelCMD(command, answer, channel string) string {
 		answer,
 		command)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Exec",
 			"error":    err,
@@ -188,7 +189,7 @@ func (bt *BotTwitch) deleteCMDfromChannel(command, channel string) string {
 		WHERE COMMAND = $1`,
 		command)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Exec",
 			"error":    err,
@@ -218,7 +219,7 @@ func (bt *BotTwitch) initChannelSettings() {
 			channel, bt.Settings[channel].Status, bt.Settings[channel].ReactStatus, bt.Settings[channel].CMDStatus,
 			bt.Settings[channel].ReactRate, bt.Settings[channel].LastReactTime, bt.Settings[channel].IsModerator)
 		if err != nil || result == nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "Exec",
 				"error":    err,
@@ -232,7 +233,7 @@ func (bt *BotTwitch) loadChannelSettings() {
 	for _, channel := range bt.Channels {
 		rows, err := resource.SingleDB().Query(`SELECT * FROM TWITCH_CHANNEL_CONFIG WHERE CHANNEL_NAME = $1`, channel)
 		if rows == nil || err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "Query",
 				"error":    err,
@@ -243,7 +244,7 @@ func (bt *BotTwitch) loadChannelSettings() {
 				&bt.Settings[channel].CMDStatus, &bt.Settings[channel].ReactRate,
 				&bt.Settings[channel].LastReactTime, &bt.Settings[channel].IsModerator)
 			if err != nil {
-				log.WithFields(log.Fields{
+				controllers.SingleLog().WithFields(log.Fields{
 					"package":  "bots",
 					"function": "Scan",
 					"error":    err,
@@ -251,7 +252,7 @@ func (bt *BotTwitch) loadChannelSettings() {
 			}
 			err = rows.Close()
 			if err != nil {
-				log.WithFields(log.Fields{
+				controllers.SingleLog().WithFields(log.Fields{
 					"package":  "bots",
 					"function": "Close",
 					"error":    err,
@@ -286,7 +287,7 @@ func (bt *BotTwitch) saveChannelSettings(channel string) {
 		bt.Settings[channel].IsModerator,
 		channel)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Exec",
 			"error":    err,

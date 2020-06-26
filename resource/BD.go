@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"bot/controllers"
 	"database/sql"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
@@ -16,7 +17,7 @@ func SingleDB() *sql.DB {
 		var err error
 		db, err = sql.Open("sqlite3", "bot.db")
 		if err != nil || db == nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "resource",
 				"function": "sql.Open",
 				"error":    err,
@@ -34,7 +35,7 @@ CREATE TABLE IF NOT EXISTS QUOTES
 	CONTAIN TEXT NOT NULL
 );`)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "main",
 			"function": "Exec",
 			"error":    err,
@@ -48,7 +49,7 @@ CREATE TABLE IF NOT EXISTS QUOTES
 		VALUES
 			($1)`, message)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "main",
 			"function": "Exec",
 			"error":    err,
@@ -61,7 +62,7 @@ func DBQuote() string {
 	var lastID int
 	rows, err := SingleDB().Query(`SELECT * FROM QUOTES`)
 	if rows == nil || err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "main",
 			"function": "Query",
 			"error":    err,
@@ -72,7 +73,7 @@ func DBQuote() string {
 		var tmp string
 		err = rows.Scan(&lastID, &tmp)
 		if err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "main",
 				"function": "Scan",
 				"error":    err,
@@ -83,7 +84,7 @@ func DBQuote() string {
 	}
 	err = rows.Close()
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "main",
 			"function": "Close",
 			"error":    err,

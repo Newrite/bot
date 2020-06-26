@@ -1,6 +1,7 @@
 package bots
 
 import (
+	"bot/controllers"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -13,7 +14,7 @@ import (
 func (bm *BotMixer) initBot() {
 	botFile, err := ioutil.ReadFile("MixerBotData.json")
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "ReadFile",
 			"file":     "mixerlogic.go",
@@ -24,7 +25,7 @@ func (bm *BotMixer) initBot() {
 	}
 	err = json.Unmarshal(botFile, bm)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "ReadFile",
 			"file":     "mixerlogic.go",
@@ -37,7 +38,7 @@ func (bm *BotMixer) initBot() {
 func (bm *BotMixer) initMixerConfig() {
 	mixConfig, err := ioutil.ReadFile("MixerConfig.json")
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "ioutil.ReadAll",
 			"file":     "mixerlogic.go",
@@ -48,7 +49,7 @@ func (bm *BotMixer) initMixerConfig() {
 	}
 	err = json.Unmarshal(mixConfig, &bm.ApiConf)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "json.Unmarshal",
 			"file":     "mixerlogic.go",
@@ -110,7 +111,7 @@ func templateRequest(method, url, headAuth string) []byte {
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, nil)
 	if req == nil || err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "NewRequest",
 			"file":     "mixerlogic.go",
@@ -123,7 +124,7 @@ func templateRequest(method, url, headAuth string) []byte {
 	req.Header.Add("Authorization", headAuth)
 	resp, err := client.Do(req)
 	if err != nil || resp == nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "client.Do",
 			"file":     "twitchapi.go",
@@ -135,7 +136,7 @@ func templateRequest(method, url, headAuth string) []byte {
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "ioutil.ReadAll",
 			"file":     "mixerlogic.go",
@@ -154,7 +155,7 @@ func requestChat() string {
 	body := templateRequest("GET", Url, SingleMixer().ApiConf.Access_token)
 	err := json.Unmarshal(body, chat)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "json.Unmarshal",
 			"file":     "mixerlogic.go",
@@ -167,7 +168,7 @@ func requestChat() string {
 
 func (bm *BotMixer) say(msg string) {
 	if msg == "" {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "msg == \"\"",
 			"file":     "mixerlogic.go",
@@ -178,7 +179,7 @@ func (bm *BotMixer) say(msg string) {
 	}
 	err := bm.Connection.WriteMessage(websocket.TextMessage, []byte(`{"type":"method","method": "msg","arguments":["`+msg+`"],"id":2}`))
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Connection.Write",
 			"file":     "mixerlogic.go",

@@ -1,6 +1,7 @@
 package bots
 
 import (
+	"bot/controllers"
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -12,7 +13,7 @@ import (
 func (bgg *BotGoodGame) readServer() string {
 	var err error
 	if bgg.n, err = bgg.Connection.Read(bgg.serverResponse); err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Connection.Read",
 			"file":     "goodgamelogic.go",
@@ -26,7 +27,7 @@ func (bgg *BotGoodGame) readServer() string {
 func (bgg *BotGoodGame) initBot() {
 	botFile, err := ioutil.ReadFile("GGBotData.json")
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "ReadFile",
 			"file":     "goodgamelogic.go",
@@ -37,7 +38,7 @@ func (bgg *BotGoodGame) initBot() {
 	}
 	err = json.Unmarshal(botFile, bgg)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "ReadFile",
 			"file":     "goodgamelogic.go",
@@ -51,7 +52,7 @@ func (bgg *BotGoodGame) connect() {
 	var err error
 	bgg.Connection, err = websocket.Dial(bgg.Server, "", bgg.Origin)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Dial",
 			"file":     "goodgamelogic.go",
@@ -64,7 +65,7 @@ func (bgg *BotGoodGame) connect() {
 	fmt.Println(bgg.readServer())
 	_, err = bgg.Connection.Write([]byte(`{"type":"auth","data":{"user_id":"` + bgg.BotId + `","token":"` + bgg.Token + `"}}`))
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Connection.Write",
 			"file":     "goodgamelogic.go",
@@ -82,7 +83,7 @@ func (bgg *BotGoodGame) joinChannels() error {
 		_, err = bgg.Connection.Write([]byte(`{"type":"join","data":{"channel_id":"` + channel + `","hidden":false}}`))
 		fmt.Println(bgg.readServer())
 		if err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "Connection.Write",
 				"file":     "goodgamelogic.go",
@@ -123,7 +124,7 @@ func (bgg *BotGoodGame) listenChannels() error {
 	var err error
 	for {
 		if err = bgg.handleChat(); err != nil {
-			log.WithFields(log.Fields{
+			controllers.SingleLog().WithFields(log.Fields{
 				"package":  "bots",
 				"function": "handleChat",
 				"file":     "goodgamelogic.go",
@@ -137,7 +138,7 @@ func (bgg *BotGoodGame) listenChannels() error {
 
 func (bgg *BotGoodGame) say(msg, channel string) {
 	if msg == "" {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "msg == \"\"",
 			"file":     "goodgamelogic.go",
@@ -150,7 +151,7 @@ func (bgg *BotGoodGame) say(msg, channel string) {
 	fmt.Println(channel)
 	_, err := bgg.Connection.Write([]byte(`{"type":"send_message","data":{"channel_id":"` + channel + `","text":"` + msg + `","hideIcon":false,"mobile":false}}`))
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "Connection.Write",
 			"file":     "goodgamelogic.go",

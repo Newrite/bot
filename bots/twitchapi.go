@@ -1,6 +1,7 @@
 package bots
 
 import (
+	"bot/controllers"
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -13,7 +14,7 @@ func (bt *BotTwitch) templateRequest(method, url, headAuth string) []byte {
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, nil)
 	if req == nil || err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "NewRequest",
 			"file":     "twitchapi.go",
@@ -28,7 +29,7 @@ func (bt *BotTwitch) templateRequest(method, url, headAuth string) []byte {
 	req.Header.Add("Client-ID", bt.ApiConf.Client_id)
 	resp, err := client.Do(req)
 	if err != nil || resp == nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "client.Do",
 			"file":     "twitchapi.go",
@@ -40,7 +41,7 @@ func (bt *BotTwitch) templateRequest(method, url, headAuth string) []byte {
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "ioutil.ReadAll",
 			"file":     "twitchapi.go",
@@ -56,7 +57,7 @@ func (bt *BotTwitch) templateRequest(method, url, headAuth string) []byte {
 func (bt *BotTwitch) initApiConfig() {
 	botConfig, err := ioutil.ReadFile("BotApiConfig.json")
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "ioutil.ReadAll",
 			"file":     "twitchapi.go",
@@ -67,7 +68,7 @@ func (bt *BotTwitch) initApiConfig() {
 	}
 	err = json.Unmarshal(botConfig, &bt.ApiConf)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "json.Unmarshal",
 			"file":     "twitchapi.go",
@@ -91,7 +92,7 @@ func (bt *BotTwitch) requestInitStreamersID() {
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
 	err := json.Unmarshal(body, &users)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "json.Unmarshal",
 			"file":     "twitchapi.go",
@@ -165,7 +166,7 @@ func (bt *BotTwitch) requestChatterData(channel, username, cmd string) string {
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.O_Auth)
 	err := json.Unmarshal(body, &chatters)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "json.Unmarshal",
 			"file":     "twitchapi.go",
@@ -196,7 +197,7 @@ func (bt *BotTwitch) requestUsersData(channel, username, cmd string) string {
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
 	err := json.Unmarshal(body, &users)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "json.Unmarshal",
 			"file":     "twitchapi.go",
@@ -205,7 +206,7 @@ func (bt *BotTwitch) requestUsersData(channel, username, cmd string) string {
 		}).Errorln("Ошибка конвертирования структуры.")
 	}
 	if len(users.User) < 1 {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "len(users.User) < 1 ",
 			"file":     "twitchapi.go",
@@ -228,7 +229,7 @@ func (bt *BotTwitch) requestBroadcasterSubscriptionsData(channel, username, cmd 
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
 	err := json.Unmarshal(body, &broadcasterSubscriptions)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "json.Unmarshal",
 			"file":     "twitchapi.go",
@@ -256,7 +257,7 @@ func (bt *BotTwitch) requestStreamData(channel, username, cmd string) string {
 	body := bt.templateRequest("GET", bt.ApiConf.Url, bt.ApiConf.Bearer)
 	err := json.Unmarshal(body, &stream)
 	if err != nil {
-		log.WithFields(log.Fields{
+		controllers.SingleLog().WithFields(log.Fields{
 			"package":  "bots",
 			"function": "json.Unmarshal",
 			"file":     "twitchapi.go",
