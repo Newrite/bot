@@ -1,7 +1,7 @@
 {
-	"client_id": "v55kcymf17gut48uzmbs0etot7x62j",
-	"o_auth": "OAuth etzhwq554nuued9g320pdbpurqyjvb",
-	"bearer": "Bearer etzhwq554nuued9g320pdbpurqyjvb",
-	"secret_id": "5mbwz0ig22lsz7jmqzt0xp92peaknm",
-	"refly_token": "v7a6gx1964r9s6zsodbqezwml60vl0"
+	"client_id": "secret",
+	"o_auth": "OAuth secret",
+	"bearer": "Bearer secret",
+	"secret_id": "secret",
+	"refly_token": "secret"
 }
