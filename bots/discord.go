@@ -23,7 +23,7 @@ type BotDiscord struct {
 
 func (db *BotDiscord) Start() {
 	var err error
-	db.token = "NzE2NjQ1Mzk1MDE0NjE1MDkw.Xturow.poE1BaMJYVYIIdm_q0mi7u7kHlg"
+	db.token = "secret"
 	db.Session, err = discordgo.New("Bot " + db.token)
 	if err != nil {
 		controllers.SingleLog().WithFields(log.Fields{
