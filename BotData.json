@@ -1,6 +1,6 @@
 {
 	"bot_name": "immersiveeva",
-    "o_auth": "oauth:ypjad5lwxcchfdsfw5o1itezdchnua",
+    "o_auth": "oauth:secret",
 	"server": "irc.chat.twitch.tv",
 	"port": "6667",
 	"owner_bot": "newr1te",
